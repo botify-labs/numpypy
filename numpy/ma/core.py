@@ -67,11 +67,11 @@ __all__ = ['MAError', 'MaskError', 'MaskType', 'MaskedArray',
            'left_shift', 'less', 'less_equal', 'load', 'loads', 'log', 'log2',
            'log10', 'logical_and', 'logical_not', 'logical_or', 'logical_xor',
            'make_mask', 'make_mask_descr', 'make_mask_none', 'mask_or',
-           'masked', 'masked_array', 'masked_equal', 'masked_greater',
+           'masked_array', 'masked_equal', 'masked_greater',
            'masked_greater_equal', 'masked_inside', 'masked_invalid',
            'masked_less', 'masked_less_equal', 'masked_not_equal',
            'masked_object', 'masked_outside', 'masked_print_option',
-           'masked_singleton', 'masked_values', 'masked_where', 'max', 'maximum',
+           'masked_values', 'masked_where', 'max', 'maximum',
            'maximum_fill_value', 'mean', 'min', 'minimum', 'minimum_fill_value',
            'mod', 'multiply', 'mvoid',
            'negative', 'nomask', 'nonzero', 'not_equal',
@@ -146,8 +146,8 @@ default_filler = {'b': True,
                   'u' : 999999,
                   'V' : '???',
                   'U' : 'N/A',
-                  'M8[D]' : np.datetime64('NaT', 'D'),
-                  'M8[us]' : np.datetime64('NaT', 'us')
+                  #'M8[D]' : np.datetime64('NaT', 'D'),
+                  #'M8[us]' : np.datetime64('NaT', 'us')
                   }
 max_filler = ntypes._minvals
 max_filler.update([(k, -np.inf) for k in [np.float32, np.float64]])
@@ -2942,7 +2942,7 @@ class MaskedArray(ndarray):
             else:
                 output.fill_value = fill_value
         return output
-    view.__doc__ = ndarray.view.__doc__
+    #view.__doc__ = ndarray.view.__doc__
 
 
     def astype(self, newtype):
@@ -4435,7 +4435,7 @@ class MaskedArray(ndarray):
         else:
             D = self.diagonal(offset=offset, axis1=axis1, axis2=axis2)
             return D.astype(dtype).filled(0).sum(axis=None, out=out)
-    trace.__doc__ = ndarray.trace.__doc__
+    #trace.__doc__ = ndarray.trace.__doc__
 
     def sum(self, axis=None, dtype=None, out=None):
         """
@@ -4863,7 +4863,7 @@ class MaskedArray(ndarray):
         if isinstance(out, MaskedArray):
             out.__setmask__(self._mask)
         return out
-    round.__doc__ = ndarray.round.__doc__
+    #round.__doc__ = ndarray.round.__doc__
 
     #............................................
     def argsort(self, axis=None, kind='quicksort', order=None, fill_value=None):
@@ -5810,7 +5810,7 @@ class MaskedConstant(MaskedArray):
         return (self.__class__, ())
 
 
-masked = masked_singleton = MaskedConstant()
+#masked = masked_singleton = MaskedConstant()
 
 
 
