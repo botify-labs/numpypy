@@ -542,14 +542,12 @@ def typename(char):
 #-----------------------------------------------------------------------------
 
 #determine the "minimum common type" for a group of arrays.
-array_type = [[_nx.single, _nx.double, _nx.longdouble],
-              [_nx.csingle, _nx.cdouble, _nx.clongdouble]]
+array_type = [[_nx.double, ],
+              [_nx.cdouble, ]]
 array_precision = {_nx.single : 0,
                    _nx.double : 1,
-                   _nx.longdouble : 2,
-                   _nx.csingle : 0,
                    _nx.cdouble : 1,
-                   _nx.clongdouble : 2}
+                   }
 def common_type(*arrays):
     """
     Return a scalar type which is common to the input arrays.
