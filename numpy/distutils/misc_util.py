@@ -1446,7 +1446,7 @@ class Configuration(object):
 
         from numpy.distutils.core import Extension
         ext = Extension(**ext_args)
-        self.ext_modules.append(ext)
+        #self.ext_modules.append(ext)
 
         dist = self.get_distribution()
         if dist is not None:
@@ -2033,6 +2033,7 @@ def get_cmd(cmdname, _cache={}):
 def get_numpy_include_dirs():
     # numpy_include_dirs are set by numpy/core/setup.py, otherwise []
     include_dirs = Configuration.numpy_include_dirs[:]
+    return include_dirs
     if not include_dirs:
         import numpy
         include_dirs = [ numpy.get_include() ]
