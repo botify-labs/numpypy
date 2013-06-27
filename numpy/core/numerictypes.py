@@ -388,20 +388,21 @@ def _set_up_aliases():
                   ('int0', 'intp'),
                   ('uint0', 'uintp'),
                   ('single', 'float'),
-                  ('csingle', 'cfloat'),
-                  ('singlecomplex', 'cfloat'),
+                  #('csingle', 'cfloat'),
+                  #('singlecomplex', 'cfloat'),
                   ('float_', 'double'),
                   ('intc', 'int'),
                   ('uintc', 'uint'),
                   ('int_', 'long'),
                   ('uint', 'ulong'),
                   ('cfloat', 'cdouble'),
-                  ('longfloat', 'longdouble'),
-                  ('clongfloat', 'clongdouble'),
-                  ('longcomplex', 'clongdouble'),
+                  #('longfloat', 'longdouble'),
+                  #('clongfloat', 'clongdouble'),
+                  #('longcomplex', 'clongdouble'),
                   ('bool_', 'bool'),
                   ('unicode_', 'unicode'),
-                  ('object_', 'object')]
+                  #('object_', 'object')
+                  ]
     if sys.version_info[0] >= 3:
         type_pairs.extend([('bytes_', 'string'),
                            ('str_', 'unicode'),
@@ -884,9 +885,9 @@ if sys.version_info[0] >= 3:
     _toadd = ['int', 'float', 'complex', 'bool', 'object',
               'str', 'bytes', 'object', ('a', allTypes['bytes_'])]
 else:
-    _toadd = ['int', 'float', 'complex', 'bool', 'object', 'string',
+    _toadd = ['int', 'float', 'complex', 'bool', 'string',
               ('str', allTypes['string_']),
-              'unicode', 'object', ('a', allTypes['string_'])]
+              'unicode', ('a', allTypes['string_'])]
 
 for name in _toadd:
     if isinstance(name, tuple):
