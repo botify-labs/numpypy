@@ -41,6 +41,13 @@ import warnings
 import numpy as np
 import sys
 
+try:
+    np.dtype(object)
+    has_dtype_object = True
+except:
+    #No object dtype in pypy yet
+    has_dtype_object = False
+
 #
 # Warnings and Exceptions
 #
@@ -151,7 +158,7 @@ def as_series(alist, trim=True) :
     if trim :
         arrays = [trimseq(a) for a in arrays]
 
-    if any([a.dtype == np.dtype(object) for a in arrays]) :
+    if has_dtype_object and any([a.dtype == np.dtype(object) for a in arrays]) :
         ret = []
         for a in arrays :
             if a.dtype != np.dtype(object) :
