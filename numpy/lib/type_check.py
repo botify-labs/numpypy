@@ -542,8 +542,8 @@ def typename(char):
 #-----------------------------------------------------------------------------
 
 #determine the "minimum common type" for a group of arrays.
-array_type = [[_nx.double, ],
-              [_nx.cdouble, ]]
+array_type = [[_nx.double, _nx.double, _nx.double],
+              [_nx.cdouble, _nx.cdouble, _nx.cdouble]]
 array_precision = {_nx.single : 0,
                    _nx.double : 1,
                    _nx.cdouble : 1,
