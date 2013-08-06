@@ -111,11 +111,26 @@ def take(a, indices, axis=None, out=None, mode='raise'):
     array([[4, 3],
            [5, 7]])
     """
-    try:
-        take = a.take
-    except AttributeError:
-        return _wrapit(a, 'take', indices, axis, out, mode)
-    return take(indices, axis, out, mode)
+    # XXX: numpypy doesn't support ndarray.take()
+    assert mode == 'raise'
+    if axis is None:
+        res = a.ravel()[indices]
+    else:
+        if axis < 0: axis += len(a.shape)
+        s0, s1 = a.shape[:axis], a.shape[axis+1:]
+        l0 = prod(s0) if s0 else 1
+        l1 = prod(s1) if s1 else 1
+        res = a.reshape((l0, -1, l1))[:,indices,:].reshape(s0 + (-1,) + s1)
+    if out is not None:
+        out[:] = res
+        return out
+    else:
+        return res
+    #try:
+    #    take = a.take
+    #except AttributeError:
+    #    return _wrapit(a, 'take', indices, axis, out, mode)
+    #return take(indices, axis, out, mode)
 
 
 # not deprecated --- copy if necessary, view otherwise
@@ -2038,11 +2053,18 @@ def ptp(a, axis=None, out=None):
     array([1, 1])
 
     """
-    try:
-        ptp = a.ptp
-    except AttributeError:
-        return _wrapit(a, 'ptp', axis, out)
-    return ptp(axis, out)
+    #XXX: numpypy does not have ndarray.ptp()
+    res = amax(a, axis) - amin(a, axis)
+    if out is not None:
+        out[:] = res
+        return out
+    else:
+        return res
+    #try:
+    #    ptp = a.ptp
+    #except AttributeError:
+    #    return _wrapit(a, 'ptp', axis, out)
+    #return ptp(axis, out)
 
 
 def amax(a, axis=None, out=None, keepdims=False):
@@ -2622,11 +2644,15 @@ def round_(a, decimals=0, out=None):
     around : equivalent function
 
     """
+    # XXX: numpypy doesn't support 'out' in ndarray.round()
     try:
         round = a.round
     except AttributeError:
         return _wrapit(a, 'round', decimals, out)
-    return round(decimals, out)
+    if out is None:
+        return round(decimals)
+    else:
+        return round(decimals, out)
 
 
 def mean(a, axis=None, dtype=None, out=None, keepdims=False):
