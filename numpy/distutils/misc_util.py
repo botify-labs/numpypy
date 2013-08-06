@@ -1446,6 +1446,7 @@ class Configuration(object):
 
         from numpy.distutils.core import Extension
         ext = Extension(**ext_args)
+        #XXX: This was commented out to prevent the building of extension modules
         #self.ext_modules.append(ext)
 
         dist = self.get_distribution()
