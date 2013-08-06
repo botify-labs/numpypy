@@ -58,7 +58,7 @@ fgetdims1 = """\
             deallocate(d)
          end if
       end if
-      if ((.not.allocated(d)).and.(s(1).ge.1)) then""" % np.intp().itemsize
+      if ((.not.allocated(d)).and.(s(1).ge.1)) then""" % np.dtype('intp').itemsize
 
 fgetdims2="""\
       end if
