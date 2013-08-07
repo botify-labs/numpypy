@@ -119,7 +119,7 @@ int F2PyCapsule_Check(PyObject *ptr);
 
 #endif
 
-#define ISCONTIGUOUS(m) ((m)->flags & NPY_CONTIGUOUS)
+#define ISCONTIGUOUS PyArray_ISCONTIGUOUS
 #define F2PY_INTENT_IN 1
 #define F2PY_INTENT_INOUT 2
 #define F2PY_INTENT_OUT 4
