@@ -136,12 +136,12 @@ fortran_doc (FortranDataDef def) {
                 goto fail;
         }
     } else {
-        PyArray_Descr *d = PyArray_DescrFromType(def.type);
-        if (sprintf(p+strlen(p),"'%c'-",d->type)==0) {
-	  Py_DECREF(d);
-	  goto fail;
-	}
-        Py_DECREF(d);
+        //PyArray_Descr *d = PyArray_DescrFromType(def.type);
+        //if (sprintf(p+strlen(p),"'%c'-",d->type)==0) {
+        //    Py_DECREF(d);
+        //    goto fail;
+        //}
+        //Py_DECREF(d);
         if (def.data==NULL) {
             if (sprintf(p+strlen(p),"array(%" NPY_INTP_FMT,def.dims.d[0])==0)
 	      goto fail;
@@ -276,7 +276,7 @@ fortran_setattr(PyFortranObject *fp, char *name, PyObject *v) {
             return -1;
         }
         if (fp->defs[i].func!=NULL) { /* is allocatable array */
-            npy_intp dims[F2PY_MAX_DIMS];
+            npy_intp dims[F2PY_MAX_DIMS], arr_dims[F2PY_MAX_DIMS];
             save_def = &fp->defs[i];
             if (v!=Py_None) {     /* set new value (reallocate if needed --
                                      see f2py generated code for more
@@ -284,7 +284,9 @@ fortran_setattr(PyFortranObject *fp, char *name, PyObject *v) {
                 for(k=0;k<fp->defs[i].rank;k++) dims[k]=-1;
                 if ((arr = array_from_pyobj(fp->defs[i].type,dims,fp->defs[i].rank,F2PY_INTENT_IN,v))==NULL)
                     return -1;
-                (*(fp->defs[i].func))(&fp->defs[i].rank,arr->dimensions,set_data,&flag);
+                for(k=0;k<fp->defs[i].rank;k++) arr_dims[k]=PyArray_DIM(arr,k);
+                (*(fp->defs[i].func))(&fp->defs[i].rank,arr_dims,set_data,&flag);
+                //(*(fp->defs[i].func))(&fp->defs[i].rank,arr->dimensions,set_data,&flag);
             } else {             /* deallocate */
                 for(k=0;k<fp->defs[i].rank;k++) dims[k]=0;
                 (*(fp->defs[i].func))(&fp->defs[i].rank,dims,set_data,&flag);
@@ -613,8 +615,8 @@ PyArrayObject* array_from_pyobj(const int type_num,
     */
     char mess[200];
     PyArrayObject *arr = NULL;
-    PyArray_Descr *descr;
-    char typechar;
+    //PyArray_Descr *descr;
+    //char typechar;
     int elsize;
 
     if ((intent & F2PY_INTENT_HIDE)
@@ -643,10 +645,13 @@ PyArrayObject* array_from_pyobj(const int type_num,
         return arr;
     }
 
-    descr = PyArray_DescrFromType(type_num);
-    elsize = descr->elsize;
-    typechar = descr->type;
-    Py_DECREF(descr);
+    PyObject* descr_arr = PyArray_SimpleNew(0, NULL, type_num);
+    elsize = PyArray_ITEMSIZE(descr_arr);
+    Py_DECREF(descr_arr);
+    //descr = PyArray_DescrFromType(type_num);
+    //elsize = descr->elsize;
+    //typechar = descr->type;
+    //Py_DECREF(descr);
     if (PyArray_Check(obj)) {
         arr = (PyArrayObject *)obj;
 
@@ -710,8 +715,10 @@ PyArrayObject* array_from_pyobj(const int type_num,
                         PyArray_ITEMSIZE(arr)
                         );
             if (!(ARRAY_ISCOMPATIBLE(arr,type_num)))
-                sprintf(mess+strlen(mess)," -- input '%c' not compatible to '%c'",
-                        arr->descr->type,typechar);
+                sprintf(mess+strlen(mess)," -- input type '%d' not compatible to type '%d'",
+                        PyArray_TYPE(arr), type_num);
+                //sprintf(mess+strlen(mess)," -- input '%c' not compatible to '%c'",
+                //        arr->descr->type,typechar);
 	    if (!(F2PY_CHECK_ALIGNMENT(arr, intent)))
 	      sprintf(mess+strlen(mess)," -- input not %d-aligned", F2PY_GET_ALIGNMENT(intent));
             PyErr_SetString(PyExc_ValueError,mess);
@@ -721,8 +728,12 @@ PyArrayObject* array_from_pyobj(const int type_num,
         /* here we have always intent(in) or intent(inplace) */
 
         {
+            int k, nd = PyArray_NDIM(arr);
+            npy_intp arr_dims[F2PY_MAX_DIMS];
+            for (k=0;k<nd;k++) arr_dims[k]=PyArray_DIM(arr,k);
+
             PyArrayObject *retarr = (PyArrayObject *) \
-                PyArray_New(&PyArray_Type, arr->nd, arr->dimensions, type_num,
+                PyArray_New(&PyArray_Type, nd, arr_dims, type_num,
                             NULL,NULL,0,
                             !(intent&F2PY_INTENT_C),
                             NULL);
@@ -757,10 +768,14 @@ PyArrayObject* array_from_pyobj(const int type_num,
 
     {
         F2PY_REPORT_ON_ARRAY_COPY_FROMANY;
+        arr = (PyArrayObject *) PyArray_FROM_OTF(obj, type_num, 
+                ((intent & F2PY_INTENT_C)?NPY_CARRAY:NPY_FARRAY) | NPY_FORCECAST);
+        /*
         arr = (PyArrayObject *) \
             PyArray_FromAny(obj,PyArray_DescrFromType(type_num), 0,0,
                             ((intent & F2PY_INTENT_C)?NPY_CARRAY:NPY_FARRAY) \
                             | NPY_FORCECAST, NULL);
+        */
         if (arr==NULL)
             return NULL;
         if (check_and_fix_dimensions(arr,rank,dims))
@@ -782,7 +797,7 @@ int check_and_fix_dimensions(PyArrayObject* arr,const int rank,npy_intp *dims) {
       match with the corresponding values in arr dimensions.
     */
     const int nd = PyArray_NDIM(arr);
-    const npy_intp arr_size = (nd)?PyArray_Size(arr):1;
+    const npy_intp arr_size = (nd)?PyArray_Size((PyObject*)arr):1;
 #ifdef DEBUG_COPY_ND_ARRAY
     dump_attrs(arr);
     printf("check_and_fix_dimensions:init: dims=");
