@@ -1399,6 +1399,7 @@ class Configuration(object):
         The self.paths(...) method is applied to all lists that may contain
         paths.
         """
+        activate = kw.pop('activate', False)
         ext_args = copy.copy(kw)
         ext_args['name'] = dot_join(self.name, name)
         ext_args['sources'] = sources
@@ -1447,7 +1448,8 @@ class Configuration(object):
         from numpy.distutils.core import Extension
         ext = Extension(**ext_args)
         #XXX: This was commented out to prevent the building of extension modules
-        #self.ext_modules.append(ext)
+        if activate:
+            self.ext_modules.append(ext)
 
         dist = self.get_distribution()
         if dist is not None:

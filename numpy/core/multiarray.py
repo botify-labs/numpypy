@@ -7,11 +7,18 @@ from numpypy.core.multiarray import *
         set_string_function, typeinfo, where, zeros)
 '''
 
+def _fastCopyAndTranspose(a):
+    return a.T.copy()
+
+def copyto(dst, src, casting='same_kind', where=None, preservena=False):
+    dst.fill(src)
+
+
 undef = '''CLIP WRAP RAISE MAXDIMS ALLOW_THREADS BUFSIZE nditer nested_iters
 broadcast empty_like fromiter fromfile frombuffer newbuffer getbuffer
-int_asbuffer _fastCopyAndTranspose set_numeric_ops can_cast promote_types
+int_asbuffer set_numeric_ops can_cast promote_types
 min_scalar_type result_type lexsort compare_chararrays putmask einsum inner
-_vec_string copyto datetime_data format_longfloat
+_vec_string datetime_data format_longfloat
 datetime_as_string busday_offset busday_count is_busday busdaycalendar
 _flagdict flagsobj
 '''.split()
