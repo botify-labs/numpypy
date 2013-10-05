@@ -19,6 +19,8 @@ try:
 except NameError:
     from sets import Set as set
 
+is_pypy = '__pypy__' in sys.builtin_module_names
+
 from numpy.distutils.compat import get_exception
 
 __all__ = ['Configuration', 'get_numpy_include_dirs', 'default_config_dict',
@@ -29,7 +31,7 @@ __all__ = ['Configuration', 'get_numpy_include_dirs', 'default_config_dict',
            'has_f_sources', 'has_cxx_sources', 'filter_sources',
            'get_dependencies', 'is_local_src_dir', 'get_ext_source_files',
            'get_script_files', 'get_lib_source_files', 'get_data_files',
-           'dot_join', 'get_frame', 'minrelpath', 'njoin',
+           'dot_join', 'get_frame', 'minrelpath', 'njoin', 'is_pypy',
            'is_sequence', 'is_string', 'as_list', 'gpaths', 'get_language',
            'quote_args', 'get_build_architecture', 'get_info', 'get_pkg_info']
 
@@ -664,7 +666,12 @@ class Configuration(object):
     _dict_keys = ['package_dir', 'installed_pkg_config']
     _extra_keys = ['name', 'version']
 
-    numpy_include_dirs = []
+    if is_pypy:
+        import numpypy as np
+        numpy_include_dirs = [np.get_include()]
+        del np
+    else:
+        numpy_include_dirs = []
 
     def __init__(self,
                  package_name=None,
@@ -2036,7 +2043,6 @@ def get_cmd(cmdname, _cache={}):
 def get_numpy_include_dirs():
     # numpy_include_dirs are set by numpy/core/setup.py, otherwise []
     include_dirs = Configuration.numpy_include_dirs[:]
-    return include_dirs
     if not include_dirs:
         import numpy
         include_dirs = [ numpy.get_include() ]
