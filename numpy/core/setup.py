@@ -393,7 +393,6 @@ def configuration(parent_package='',top_path=None):
     from numpy.distutils.system_info import get_info, default_lib_dirs
 
     config = Configuration('core', parent_package, top_path)
-    return config
     local_dir = config.local_path
     codegen_dir = join(local_dir, 'code_generators')
 
@@ -653,9 +652,11 @@ def configuration(parent_package='',top_path=None):
                          sources = [join('src', 'dummymodule.c'),
                                   generate_config_h,
                                   generate_numpyconfig_h,
-                                  generate_numpy_api]
+                                  generate_numpy_api],
+                         activate = True,
                          )
 
+    return config
     #######################################################################
     #                          npymath library                            #
     #######################################################################

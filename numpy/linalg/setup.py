@@ -38,7 +38,8 @@ def configuration(parent_package='',top_path=None):
                          sources = [get_lapack_lite_sources],
                          depends = ['lapack_litemodule.c'] + lapack_lite_src,
                          extra_info = lapack_info,
-                         activate = True)
+                         activate = True,
+                        )
 
     # umath_linalg module
 
