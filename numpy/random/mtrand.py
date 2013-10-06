@@ -1,6 +1,13 @@
 from random import Random
 from numpy import zeros
 
+# This file is used in pypy's version of mtrand,
+# cpython compiles a mtrand capi module.
+
+# as functionality is added here, uncomment the function
+# in __all__ located in numpy/random/info.py
+
+
 _rand = Random()
 def random_sample(length=0):
     if length == 0:
