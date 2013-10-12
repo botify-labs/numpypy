@@ -618,6 +618,10 @@ def configuration(parent_package='',top_path=None):
     config.add_include_dirs(join(local_dir))
 
     config.add_data_files('include/numpy/*.h')
+    if '__pypy__' in sys.builtin_module_names:
+        # Copy pypy's compatability file, too much bother to clean up the
+        # multiple levels of ifdefs
+        config.add_data_files(('include/numpy', sys.exec_prefix + '/include/numpy/npy_3kcompat.h'))
     config.add_include_dirs(join('src', 'npymath'))
     config.add_include_dirs(join('src', 'multiarray'))
     config.add_include_dirs(join('src', 'umath'))
