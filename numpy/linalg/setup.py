@@ -37,9 +37,8 @@ def configuration(parent_package='',top_path=None):
     config.add_extension('lapack_lite',
                          sources = [get_lapack_lite_sources],
                          depends = ['lapack_litemodule.c'] + lapack_lite_src,
-                         extra_info = lapack_info,
-                         activate = True,
-                        )
+                         extra_info = lapack_info
+                         )
 
     # umath_linalg module
 

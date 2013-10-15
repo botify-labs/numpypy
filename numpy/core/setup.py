@@ -618,9 +618,6 @@ def configuration(parent_package='',top_path=None):
     config.add_include_dirs(join(local_dir))
 
     config.add_data_files('include/numpy/*.h')
-    if '__pypy__' in sys.builtin_module_names:
-        # Copy pypy's builting headers
-        config.add_data_files(('include/numpy', sys.exec_prefix + '/include/numpy/*.h'))
     config.add_include_dirs(join('src', 'npymath'))
     config.add_include_dirs(join('src', 'multiarray'))
     config.add_include_dirs(join('src', 'umath'))
@@ -655,11 +652,9 @@ def configuration(parent_package='',top_path=None):
                          sources = [join('src', 'dummymodule.c'),
                                   generate_config_h,
                                   generate_numpyconfig_h,
-                                  generate_numpy_api],
-                         activate = True,
+                                  generate_numpy_api]
                          )
 
-    return config
     #######################################################################
     #                          npymath library                            #
     #######################################################################
@@ -832,15 +827,16 @@ def configuration(parent_package='',top_path=None):
         multiarray_src = [join('src', 'multiarray', 'multiarraymodule_onefile.c')]
         multiarray_src.append(generate_multiarray_templated_sources)
 
-    config.add_extension('multiarray',
-                         sources = multiarray_src +
-                                 [generate_config_h,
-                                 generate_numpyconfig_h,
-                                 generate_numpy_api,
-                                 join(codegen_dir, 'generate_numpy_api.py'),
-                                 join('*.py')],
-                         depends = deps + multiarray_deps,
-                         libraries = ['npymath', 'npysort'])
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('multiarray',
+                             sources = multiarray_src +
+                                     [generate_config_h,
+                                     generate_numpyconfig_h,
+                                     generate_numpy_api,
+                                     join(codegen_dir, 'generate_numpy_api.py'),
+                                     join('*.py')],
+                             depends = deps + multiarray_deps,
+                             libraries = ['npymath', 'npysort'])
 
     #######################################################################
     #                           umath module                              #
@@ -901,29 +897,31 @@ def configuration(parent_package='',top_path=None):
         umath_src.append(join('src', 'umath', 'funcs.inc.src'))
         umath_src.append(join('src', 'umath', 'simd.inc.src'))
 
-    config.add_extension('umath',
-                         sources = umath_src +
-                                 [generate_config_h,
-                                 generate_numpyconfig_h,
-                                 generate_umath_c,
-                                 generate_ufunc_api],
-                         depends = deps + umath_deps,
-                         libraries = ['npymath'],
-                         )
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('umath',
+                             sources = umath_src +
+                                     [generate_config_h,
+                                     generate_numpyconfig_h,
+                                     generate_umath_c,
+                                     generate_ufunc_api],
+                             depends = deps + umath_deps,
+                             libraries = ['npymath'],
+                             )
 
     #######################################################################
     #                         scalarmath module                           #
     #######################################################################
 
-    config.add_extension('scalarmath',
-                         sources = [join('src', 'scalarmathmodule.c.src'),
-                                  generate_config_h,
-                                  generate_numpyconfig_h,
-                                  generate_numpy_api,
-                                  generate_ufunc_api],
-                         depends = deps,
-                         libraries = ['npymath'],
-                         )
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('scalarmath',
+                             sources = [join('src', 'scalarmathmodule.c.src'),
+                                      generate_config_h,
+                                      generate_numpyconfig_h,
+                                      generate_numpy_api,
+                                      generate_ufunc_api],
+                             depends = deps,
+                             libraries = ['npymath'],
+                             )
 
     #######################################################################
     #                          _dotblas module                            #
@@ -939,49 +937,55 @@ def configuration(parent_package='',top_path=None):
             return ext.depends[:1]
         return None # no extension module will be built
 
-    config.add_extension('_dotblas',
-                         sources = [get_dotblas_sources],
-                         depends = [join('blasdot', '_dotblas.c'),
-                                  join('blasdot', 'cblas.h'),
-                                  ],
-                         include_dirs = ['blasdot'],
-                         extra_info = blas_info
-                         )
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('_dotblas',
+                             sources = [get_dotblas_sources],
+                             depends = [join('blasdot', '_dotblas.c'),
+                                      join('blasdot', 'cblas.h'),
+                                      ],
+                             include_dirs = ['blasdot'],
+                             extra_info = blas_info
+                             )
 
     #######################################################################
     #                        umath_tests module                           #
     #######################################################################
 
-    config.add_extension('umath_tests',
-                    sources = [join('src', 'umath', 'umath_tests.c.src')])
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('umath_tests',
+                        sources = [join('src', 'umath', 'umath_tests.c.src')])
 
     #######################################################################
     #                   custom rational dtype module                      #
     #######################################################################
 
-    config.add_extension('test_rational',
-                    sources = [join('src', 'umath', 'test_rational.c.src')])
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('test_rational',
+                        sources = [join('src', 'umath', 'test_rational.c.src')])
 
     #######################################################################
     #                        struct_ufunc_test module                     #
     #######################################################################
 
-    config.add_extension('struct_ufunc_test',
-                    sources = [join('src', 'umath', 'struct_ufunc_test.c.src')])
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('struct_ufunc_test',
+                        sources = [join('src', 'umath', 'struct_ufunc_test.c.src')])
 
     #######################################################################
     #                     multiarray_tests module                         #
     #######################################################################
 
-    config.add_extension('multiarray_tests',
-                    sources = [join('src', 'multiarray', 'multiarray_tests.c.src')])
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('multiarray_tests',
+                        sources = [join('src', 'multiarray', 'multiarray_tests.c.src')])
 
     #######################################################################
     #                        operand_flag_tests module                    #
     #######################################################################
 
-    config.add_extension('operand_flag_tests',
-                    sources = [join('src', 'umath', 'operand_flag_tests.c.src')])
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('operand_flag_tests',
+                        sources = [join('src', 'umath', 'operand_flag_tests.c.src')])
 
     config.add_data_dir('tests')
     config.add_data_dir('tests/data')

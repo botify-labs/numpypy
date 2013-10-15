@@ -8,9 +8,11 @@ def configuration(parent_package='',top_path=None):
     config.add_data_dir('tests')
 
     # Configure fftpack_lite
-    config.add_extension('fftpack_lite',
-                         sources=['fftpack_litemodule.c', 'fftpack.c']
-                         )
+    import sys
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('fftpack_lite',
+                             sources=['fftpack_litemodule.c', 'fftpack.c']
+                             )
 
 
     return config

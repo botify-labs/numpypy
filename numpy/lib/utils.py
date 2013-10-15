@@ -32,7 +32,6 @@ def get_include():
         ...
 
     """
-    """
     import numpy
     if numpy.show_config is None:
         # running from numpy source directory
@@ -42,9 +41,6 @@ def get_include():
         import numpy.core as core
         d = os.path.join(os.path.dirname(core.__file__), 'include')
     return d
-    """
-    import numpypy
-    return numpypy.get_include()
 
 def get_numarray_include(type=None):
     """
