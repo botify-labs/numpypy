@@ -389,21 +389,20 @@ def _set_up_aliases():
                   ('int0', 'intp'),
                   ('uint0', 'uintp'),
                   ('single', 'float'),
-                  #('csingle', 'cfloat'),
-                  #('singlecomplex', 'cfloat'),
+                  ('csingle', 'cfloat'),
+                  ('singlecomplex', 'cfloat'),
                   ('float_', 'double'),
                   ('intc', 'int'),
                   ('uintc', 'uint'),
                   ('int_', 'long'),
                   ('uint', 'ulong'),
                   ('cfloat', 'cdouble'),
-                  #('longfloat', 'longdouble'),
-                  #('clongfloat', 'clongdouble'),
-                  #('longcomplex', 'clongdouble'),
+                  ('longfloat', 'longdouble'),
+                  ('clongfloat', 'clongdouble'),
+                  ('longcomplex', 'clongdouble'),
                   ('bool_', 'bool'),
                   ('unicode_', 'unicode'),
-                  #('object_', 'object')
-                  ]
+                  ('object_', 'object')]
     if sys.version_info[0] >= 3:
         type_pairs.extend([('bytes_', 'string'),
                            ('str_', 'unicode'),
@@ -413,8 +412,13 @@ def _set_up_aliases():
                            ('string_', 'string'),
                            ('bytes_', 'string')])
     for alias, t in type_pairs:
-        allTypes[alias] = allTypes[t]
-        sctypeDict[alias] = sctypeDict[t]
+        try:
+            allTypes[alias] = allTypes[t]
+        except KeyError:
+            if '__pypy__' not in sys.builtin_module_names:
+                raise
+        else:
+            sctypeDict[alias] = sctypeDict[t]
     # Remove aliases overriding python types and modules
     to_remove = ['ulong', 'object', 'unicode', 'int', 'long', 'float',
                  'complex', 'bool', 'string', 'datetime', 'timedelta']
