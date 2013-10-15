@@ -1,19 +1,5 @@
-from numpypy.core.umath import *
-"""(maximum,  minimum, absolute, equal, not_equal,
-        isnan, isinf, isfinite, sin, cos, tan, invert, subtract, multiply, add,
-        arctan2, less_equal, greater_equal, sqrt, exp, log, log10)"""
-from numpypy import PINF, NAN, pi
+from _numpypy.umath import *
 
-frompyfunc = mod = None
-
-def geterrobj():
-    """Fake function: simply return defaults"""
-    return [8192, 0, None]
-
-def seterrobj(val):
-    pass
-
-# Constants:
 SHIFT_DIVIDEBYZERO = 0
 SHIFT_OVERFLOW = 3
 SHIFT_UNDERFLOW = 6
@@ -25,12 +11,23 @@ ERR_RAISE = 2
 ERR_CALL = 3
 ERR_PRINT = 4
 ERR_LOG = 5
+
 ERR_DEFAULT2 = 521
 
 UFUNC_BUFSIZE_DEFAULT = 8192
 
-undef = '''hypot remainder
-'''.split()
-for name in undef:
+PINF = float('inf')
+NAN = float('nan')
+from math import pi
+
+def geterrobj():
+    return [UFUNC_BUFSIZE_DEFAULT, ERR_DEFAULT2, None]
+
+def seterrobj(val):
+    pass
+
+for name in '''
+hypot remainder frompyfunc mod
+'''.split():
     assert name not in globals()
     globals()[name] = None
