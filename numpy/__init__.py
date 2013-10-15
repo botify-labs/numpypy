@@ -140,7 +140,7 @@ else:
         msg = """Error importing numpy: you should not try to import numpy from
         its source directory; please exit the numpy source tree, and relaunch
         your python intepreter from there."""
-        #raise ImportError(msg)
+        raise ImportError(msg)
     from .version import git_revision as __git_revision__
     from .version import version as __version__
 

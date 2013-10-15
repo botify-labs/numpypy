@@ -2644,15 +2644,11 @@ def round_(a, decimals=0, out=None):
     around : equivalent function
 
     """
-    # XXX: numpypy doesn't support 'out' in ndarray.round()
     try:
         round = a.round
     except AttributeError:
         return _wrapit(a, 'round', decimals, out)
-    if out is None:
-        return round(decimals)
-    else:
-        return round(decimals, out)
+    return round(decimals, out)
 
 
 def mean(a, axis=None, dtype=None, out=None, keepdims=False):

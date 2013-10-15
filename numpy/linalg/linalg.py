@@ -39,9 +39,6 @@ _L = asbytes('L')
 
 fortran_int = intc
 
-import sys
-ispypy = '__pypy__' in sys.builtin_module_names
-
 # Error object
 class LinAlgError(Exception):
     """
@@ -106,15 +103,9 @@ def get_linalg_error_extobj(callback):
     extobj[2] = callback
     return extobj
 
-def do_nothing(*args):
-    return args[0]
-
 def _makearray(a):
     new = asarray(a)
-    if ispypy:
-        wrap = do_nothing
-    else:
-        wrap = getattr(a, "__array_prepare__", new.__array_wrap__)
+    wrap = getattr(a, "__array_prepare__", new.__array_wrap__)
     return new, wrap
 
 def isComplexType(t):

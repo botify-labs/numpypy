@@ -1,7 +1,7 @@
 from __future__ import division, absolute_import, print_function
 
-__all__ = [#'ravel_multi_index',
-           #'unravel_index',
+__all__ = ['ravel_multi_index',
+           'unravel_index',
            'mgrid',
            'ogrid',
            'r_', 'c_', 's_',
