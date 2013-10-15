@@ -19,8 +19,6 @@ try:
 except NameError:
     from sets import Set as set
 
-is_pypy = '__pypy__' in sys.builtin_module_names
-
 from numpy.distutils.compat import get_exception
 
 __all__ = ['Configuration', 'get_numpy_include_dirs', 'default_config_dict',
@@ -31,7 +29,7 @@ __all__ = ['Configuration', 'get_numpy_include_dirs', 'default_config_dict',
            'has_f_sources', 'has_cxx_sources', 'filter_sources',
            'get_dependencies', 'is_local_src_dir', 'get_ext_source_files',
            'get_script_files', 'get_lib_source_files', 'get_data_files',
-           'dot_join', 'get_frame', 'minrelpath', 'njoin', 'is_pypy',
+           'dot_join', 'get_frame', 'minrelpath', 'njoin',
            'is_sequence', 'is_string', 'as_list', 'gpaths', 'get_language',
            'quote_args', 'get_build_architecture', 'get_info', 'get_pkg_info']
 
@@ -666,12 +664,7 @@ class Configuration(object):
     _dict_keys = ['package_dir', 'installed_pkg_config']
     _extra_keys = ['name', 'version']
 
-    if is_pypy:
-        import numpypy as np
-        numpy_include_dirs = [np.get_include()]
-        del np
-    else:
-        numpy_include_dirs = []
+    numpy_include_dirs = []
 
     def __init__(self,
                  package_name=None,
@@ -1406,7 +1399,6 @@ class Configuration(object):
         The self.paths(...) method is applied to all lists that may contain
         paths.
         """
-        activate = kw.pop('activate', False)
         ext_args = copy.copy(kw)
         ext_args['name'] = dot_join(self.name, name)
         ext_args['sources'] = sources
@@ -1454,9 +1446,7 @@ class Configuration(object):
 
         from numpy.distutils.core import Extension
         ext = Extension(**ext_args)
-        #XXX: This was commented out to prevent the building of extension modules
-        if activate:
-            self.ext_modules.append(ext)
+        self.ext_modules.append(ext)
 
         dist = self.get_distribution()
         if dist is not None:
