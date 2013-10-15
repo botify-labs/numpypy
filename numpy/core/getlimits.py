@@ -16,7 +16,7 @@ def _frz(a):
     return a
 
 _convert_to_float = {
-    #ntypes.csingle: ntypes.single,
+    ntypes.csingle: ntypes.single,
     ntypes.complex_: ntypes.float_,
     #ntypes.clongfloat: ntypes.longfloat
     }
