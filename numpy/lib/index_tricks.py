@@ -19,8 +19,7 @@ makemat = matrix.matrix
 
 
 __all__ = [
-    #'ravel_multi_index', 'unravel_index',
-    'mgrid', 'ogrid', 'r_', 'c_',
+    'ravel_multi_index', 'unravel_index', 'mgrid', 'ogrid', 'r_', 'c_',
     's_', 'index_exp', 'ix_', 'ndenumerate', 'ndindex', 'fill_diagonal',
     'diag_indices', 'diag_indices_from'
     ]

@@ -40,7 +40,7 @@ import warnings
 
 from . import core as ma
 from .core import MaskedArray, MAError, add, array, asarray, concatenate, count, \
-    filled, getmask, getmaskarray, make_mask_descr, masked_array, \
+    filled, getmask, getmaskarray, make_mask_descr, masked, masked_array, \
     mask_or, nomask, ones, sort, zeros
 #from core import *
 
