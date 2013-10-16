@@ -302,6 +302,11 @@ def _add_types():
             allTypes[name] = typeinfo[a]
 _add_types()
 
+if '__pypy__' in sys.builtin_module_names:
+    for name in ['object', 'datetime', 'timedelta']:
+        if name not in allTypes:
+            allTypes[name] = sctypeDict[name] = None
+
 def _add_aliases():
     for a in typeinfo.keys():
         name = english_lower(a)
@@ -412,13 +417,8 @@ def _set_up_aliases():
                            ('string_', 'string'),
                            ('bytes_', 'string')])
     for alias, t in type_pairs:
-        try:
-            allTypes[alias] = allTypes[t]
-        except KeyError:
-            if '__pypy__' not in sys.builtin_module_names:
-                raise
-        else:
-            sctypeDict[alias] = sctypeDict[t]
+        allTypes[alias] = allTypes[t]
+        sctypeDict[alias] = sctypeDict[t]
     # Remove aliases overriding python types and modules
     to_remove = ['ulong', 'object', 'unicode', 'int', 'long', 'float',
                  'complex', 'bool', 'string', 'datetime', 'timedelta']
@@ -890,9 +890,9 @@ if sys.version_info[0] >= 3:
     _toadd = ['int', 'float', 'complex', 'bool', 'object',
               'str', 'bytes', 'object', ('a', allTypes['bytes_'])]
 else:
-    _toadd = ['int', 'float', 'complex', 'bool', 'string',
+    _toadd = ['int', 'float', 'complex', 'bool', 'object', 'string',
               ('str', allTypes['string_']),
-              'unicode', ('a', allTypes['string_'])]
+              'unicode', 'object', ('a', allTypes['string_'])]
 
 for name in _toadd:
     if isinstance(name, tuple):
