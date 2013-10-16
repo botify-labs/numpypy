@@ -18,7 +18,7 @@ def _frz(a):
 _convert_to_float = {
     ntypes.csingle: ntypes.single,
     ntypes.complex_: ntypes.float_,
-    #ntypes.clongfloat: ntypes.longfloat
+    ntypes.clongfloat: ntypes.longfloat
     }
 
 class finfo(object):
