@@ -18,5 +18,5 @@ _vec_string datetime_data format_longfloat
 datetime_as_string busday_offset busday_count is_busday busdaycalendar
 _flagdict flagsobj
 '''.split():
-    assert name not in globals()
-    globals()[name] = None
+    if name not in globals():
+        globals()[name] = None
