@@ -16,9 +16,12 @@ ERR_DEFAULT2 = 521
 
 UFUNC_BUFSIZE_DEFAULT = 8192
 
+PZERO = float('0.0')
+NZERO = float('-0.0')
 PINF = float('inf')
+NINF = float('-inf')
 NAN = float('nan')
-from math import pi
+from math import e, pi
 
 def geterrobj():
     return [UFUNC_BUFSIZE_DEFAULT, ERR_DEFAULT2, None]
