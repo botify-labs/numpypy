@@ -32,5 +32,5 @@ def seterrobj(val):
 for name in '''
 hypot remainder frompyfunc mod
 '''.split():
-    assert name not in globals()
-    globals()[name] = None
+    if name not in globals():
+        globals()[name] = None
