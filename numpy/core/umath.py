@@ -1,5 +1,3 @@
-from _numpypy.umath import *
-
 SHIFT_DIVIDEBYZERO = 0
 SHIFT_OVERFLOW = 3
 SHIFT_UNDERFLOW = 6
@@ -28,6 +26,8 @@ def geterrobj():
 
 def seterrobj(val):
     pass
+
+from _numpypy.umath import *
 
 for name in '''
 hypot remainder frompyfunc mod

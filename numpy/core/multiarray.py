@@ -1,5 +1,3 @@
-from _numpypy.multiarray import *
-
 def _fastCopyAndTranspose(a):
     return a.T.copy()
 
@@ -8,6 +6,8 @@ def copyto(dst, src, casting='same_kind', where=None):
 
 def set_typeDict(d):
     pass
+
+from _numpypy.multiarray import *
 
 for name in '''
 CLIP WRAP RAISE MAXDIMS ALLOW_THREADS BUFSIZE nditer nested_iters
