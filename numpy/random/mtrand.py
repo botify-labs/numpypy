@@ -7,22 +7,43 @@ from numpy import zeros
 # as functionality is added here, uncomment the function
 # in __all__ located in numpy/random/info.py
 
-
 _rand = Random()
-def random_sample(length=0):
-    if length == 0:
+
+def random_sample(size=None):
+    if size is None:
         return _rand.random()
-    ret = zeros(length)
+    ret = zeros(size)
     for x in xrange(ret.size):
-        ret[x] = _rand.random()
+        ret.flat[x] = _rand.random()
     return ret
 
-def randn(length=0):
-    if length == 0:
+def rand(*args):
+    if len(args) == 0:
+        args = None
+    return random_sample(args)
+
+def standard_normal(size=None):
+    if size is None:
         return _rand.gauss(0., 1.)
-    ret = zeros(length)
+    ret = zeros(size)
     for x in xrange(ret.size):
-        ret[x] = _rand.gauss(0., 1.)
+        ret.flat[x] = _rand.gauss(0., 1.)
+    return ret
+
+def randn(*args):
+    if len(args) == 0:
+        args = None
+    return standard_normal(args)
+
+def randint(low, high=None, size=None):
+    if high is None:
+        high = low
+        low = 0
+    if size is None:
+        return _rand.randint(low, high)
+    ret = zeros(size, dtype='int')
+    for x in xrange(ret.size):
+        ret.flat[x] = _rand.randint(low, high)
     return ret
 
 seed = _rand.seed
