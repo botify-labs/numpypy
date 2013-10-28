@@ -1,12 +1,6 @@
 from random import Random
 from numpy import zeros
 
-# This file is used in pypy's version of mtrand,
-# cpython compiles a mtrand capi module.
-
-# as functionality is added here, uncomment the function
-# in __all__ located in numpy/random/info.py
-
 _rand = Random()
 
 def random_sample(size=None):
@@ -47,3 +41,16 @@ def randint(low, high=None, size=None):
     return ret
 
 seed = _rand.seed
+
+#from _numpypy.mtrand import *  # doesn't exist yet
+
+for name in '''
+beta binomial bytes chisquare exponential f gamma geometric get_state gumbel
+hypergeometric laplace logistic lognormal logseries multinomial
+multivariate_normal negative_binomial noncentral_chisquare noncentral_f normal
+pareto permutation poisson power random_integers rayleigh set_state shuffle
+standard_cauchy standard_exponential standard_gamma standard_t triangular
+uniform vonmises wald weibull zipf
+'''.split():
+    if name not in globals():
+        globals()[name] = None
