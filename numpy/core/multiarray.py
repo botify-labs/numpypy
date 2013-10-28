@@ -16,7 +16,7 @@ int_asbuffer set_numeric_ops can_cast promote_types
 min_scalar_type result_type lexsort compare_chararrays putmask einsum inner
 _vec_string datetime_data format_longfloat
 datetime_as_string busday_offset busday_count is_busday busdaycalendar
-_flagdict flagsobj
+_flagdict flagsobj may_share_memory
 '''.split():
     if name not in globals():
         globals()[name] = None
