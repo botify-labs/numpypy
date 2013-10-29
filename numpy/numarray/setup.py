@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 
 from os.path import join
+import sys
 
 def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
@@ -8,7 +9,8 @@ def configuration(parent_package='',top_path=None):
 
     config.add_data_files('include/numpy/*')
 
-    config.add_extension('_capi',
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_extension('_capi',
                          sources=['_capi.c'],
                          )
 
