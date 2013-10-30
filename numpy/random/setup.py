@@ -42,15 +42,15 @@ def configuration(parent_package='',top_path=None):
     # Configure mtrand
     if '__pypy__' not in sys.builtin_module_names:
         config.add_extension('mtrand',
-                             sources=[join('mtrand', x) for x in
-                                      ['mtrand.c', 'randomkit.c', 'initarray.c',
-                                       'distributions.c']]+[generate_libraries],
-                             libraries=libs,
-                             depends=[join('mtrand', '*.h'),
-                                      join('mtrand', '*.pyx'),
-                                      join('mtrand', '*.pxi'),],
-                             define_macros=defs,
-                             )
+                         sources=[join('mtrand', x) for x in
+                                  ['mtrand.c', 'randomkit.c', 'initarray.c',
+                                   'distributions.c']]+[generate_libraries],
+                         libraries=libs,
+                         depends=[join('mtrand', '*.h'),
+                                  join('mtrand', '*.pyx'),
+                                  join('mtrand', '*.pxi'),],
+                         define_macros=defs,
+                         )
 
     config.add_data_files(('.', join('mtrand', 'randomkit.h')))
     config.add_data_dir('tests')
