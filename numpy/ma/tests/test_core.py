@@ -821,6 +821,7 @@ class TestMaskedArrayArithmetic(TestCase):
         assert_equal(np.conjugate(x), conjugate(xm))
 
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_count_func (self):
         "Tests count"
         ott = array([0., 1., 2., 3.], mask=[1, 0, 0, 0])
@@ -1051,6 +1052,7 @@ class TestMaskedArrayArithmetic(TestCase):
         assert_equal(a.mask, [0, 0, 0])
 
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_mod(self):
         "Tests mod"
         (x, y, a10, m1, m2, xm, ym, z, zm, xf) = self.d
@@ -3289,6 +3291,7 @@ class TestMaskedArrayFunctions(TestCase):
         assert_equal(test, np.dtype([(('A', 'a'), bool)]))
 
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_make_mask(self):
         "Test make_mask"
         # w/ a list as an input

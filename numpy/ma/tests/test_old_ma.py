@@ -147,6 +147,7 @@ class TestMa(TestCase):
         self.assertTrue (eq(np.concatenate((x, y)), concatenate((xm, y))))
         self.assertTrue (eq(np.concatenate((x, y, x)), concatenate((x, ym, x))))
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_xtestCount (self):
         "Test count"
         ott = array([0., 1., 2., 3.], mask=[1, 0, 0, 0])

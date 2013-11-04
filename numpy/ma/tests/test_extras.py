@@ -664,6 +664,7 @@ class TestCorrcoef(TestCase):
 
 class TestPolynomial(TestCase):
     #
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_polyfit(self):
         "Tests polyfit"
         # On ndarrays

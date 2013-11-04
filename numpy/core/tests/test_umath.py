@@ -693,6 +693,7 @@ class TestMinMax(TestCase):
 
 
 class TestAbsolute(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_abs_blocked(self):
         "simd tests on abs"
         for dt in [np.float32, np.float64]:

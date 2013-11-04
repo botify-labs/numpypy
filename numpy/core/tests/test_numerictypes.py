@@ -206,6 +206,7 @@ class test_create_values_nested_multiple(create_values, TestCase):
 class read_values_plain(object):
     """Check the reading of values in heterogeneous arrays (plain)"""
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_access_fields(self):
         h = np.array(self._buffer, dtype=self._descr)
         if not self.multiple_rows:

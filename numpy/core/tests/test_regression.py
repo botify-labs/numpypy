@@ -678,6 +678,7 @@ class TestRegression(TestCase):
         x = np.random.rand(*(2,)*16)
         y = x.transpose(list(range(16)))
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_string_mergesort(self, level=rlevel):
         """Ticket #540"""
         x = np.array(['a']*32)
@@ -1182,6 +1183,7 @@ class TestRegression(TestCase):
         assert_(arr[0][0] == 'john')
         assert_(arr[0][1] == 4)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_void_scalar_constructor(self):
         #Issue #1550
 
@@ -1806,6 +1808,7 @@ class TestRegression(TestCase):
         a[...] = [[1, 2]]
         assert_equal(a, [[1, 2], [1, 2]])
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_memoryleak(self):
         # Ticket #1917 - ensure that array data doesn't leak
         for i in range(1000):
