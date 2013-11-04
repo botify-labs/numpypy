@@ -76,12 +76,14 @@ class create_zeros(object):
         ua = zeros((), dtype='U%s' % self.ulen)
         self.content_check(ua, ua[()], 4*self.ulen)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_zerosSD(self):
         """Check creation of single-dimensional objects"""
         ua = zeros((2,), dtype='U%s' % self.ulen)
         self.content_check(ua, ua[0], 4*self.ulen*2)
         self.content_check(ua, ua[1], 4*self.ulen*2)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_zerosMD(self):
         """Check creation of multi-dimensional objects"""
         ua = zeros((2, 3, 4), dtype='U%s' % self.ulen)

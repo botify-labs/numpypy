@@ -761,6 +761,7 @@ class TestMinMax(TestCase):
 
 
 class TestAbsoluteNegative(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_abs_neg_blocked(self):
         # simd tests on abs, test all alignments for vz + 2 * (vs - 1) + 1
         for dt, sz in [(np.float32, 11), (np.float64, 5)]:
