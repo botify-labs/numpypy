@@ -23,6 +23,26 @@ def main(argv):
         if attr is None and name.startswith("_"):
             continue
         subobj = getattr(obj, name)
+        if subobj is None:
+            continue
+        if isinstance(subobj, types.GetSetDescriptorType):
+            try:
+                a = obj(None)
+                getattr(a, name)
+            except NotImplementedError:
+                #print >> sys.stderr, 'skipping attribute',name
+                continue
+            except:
+                pass
+        if isinstance(subobj, types.MethodType):
+            try:
+                a = obj(None)
+                getattr(a, name)
+            except NotImplementedError:
+                #print >> sys.stderr, 'skipping attribute',name
+                continue
+            except:
+                pass
         if isinstance(subobj, types.TypeType):
             kind = KINDS["TYPE"]
         else:
