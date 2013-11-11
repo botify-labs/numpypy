@@ -1,6 +1,7 @@
 """Test deprecation and future warnings.
 
 """
+import sys
 import numpy as np
 from numpy.testing import assert_warns, run_module_suite, dec
 
