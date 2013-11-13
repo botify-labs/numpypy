@@ -1634,6 +1634,7 @@ class TestUfuncs(TestCase):
             assert_equal(ur.filled(0), mr.filled(0), f)
             assert_mask_equal(ur.mask, mr.mask, err_msg=f)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_reduce(self):
         "Tests reduce on MaskedArrays."
         a = self.d[0]

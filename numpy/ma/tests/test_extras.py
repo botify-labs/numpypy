@@ -14,6 +14,7 @@ __version__ = '1.0'
 __revision__ = "$Revision: 3473 $"
 __date__ = '$Date: 2007-10-29 17:18:13 +0200 (Mon, 29 Oct 2007) $'
 
+import sys
 import numpy as np
 from numpy.testing import TestCase, run_module_suite, dec
 from numpy.ma.testutils import (rand, assert_, assert_array_equal,
