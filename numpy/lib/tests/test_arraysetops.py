@@ -14,6 +14,7 @@ from numpy.lib.arraysetops import (
 
 class TestSetOps(TestCase):
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_unique(self):
 
         def check_all(a, b, i1, i2, c, dt):

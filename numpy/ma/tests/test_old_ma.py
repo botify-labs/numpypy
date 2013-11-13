@@ -698,6 +698,7 @@ class TestUfuncs(TestCase):
             self.assertTrue(eq(ur.filled(0), mr.filled(0), f))
             self.assertTrue(eqmask(ur.mask, mr.mask))
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_reduce(self):
         a = self.d[0]
         self.assertFalse(alltrue(a, axis=0))
