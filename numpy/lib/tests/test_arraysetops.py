@@ -3,6 +3,7 @@
 """
 from __future__ import division, absolute_import, print_function
 
+import sys
 import numpy as np
 from numpy.testing import (
     run_module_suite, TestCase, assert_array_equal
