@@ -373,7 +373,13 @@ fromstring = multiarray.fromstring
 fromiter = multiarray.fromiter
 fromfile = multiarray.fromfile
 frombuffer = multiarray.frombuffer
-may_share_memory = multiarray.may_share_memory
+if multiarray.may_share_memory is None:
+    # this happens e.g. on PyPy: remove it from __all__ so that we will use
+    # the pure-Python version defined in lib/utils.py
+    __all__.remove('may_share_memory')
+else:
+    may_share_memory = multiarray.may_share_memory
+
 if sys.version_info[0] < 3:
     newbuffer = multiarray.newbuffer
     getbuffer = multiarray.getbuffer
