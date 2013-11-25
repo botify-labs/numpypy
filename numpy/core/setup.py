@@ -664,7 +664,9 @@ def configuration(parent_package='',top_path=None):
                          sources = [join('src', 'dummymodule.c'),
                                   generate_config_h,
                                   generate_numpyconfig_h,
-                                  generate_numpy_api]
+                                  generate_numpy_api,
+                                  generate_ufunc_api,
+                                ]
                          )
 
     #######################################################################
