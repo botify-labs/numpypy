@@ -33,6 +33,12 @@ def get_include():
         ...
 
     """
+    if '__pypy__' in sys.builtin_module_names:
+        # numpy/*.h is already shipped with PyPy includes, no need for
+        # numpy/core/include/*. Moreover, those files are specific for the
+        # CPython version of numpy, which means that if we include them on
+        # PyPy by mistake, we get most probably a segfault.
+        return []
     import numpy
     if numpy.show_config is None:
         # running from numpy source directory
