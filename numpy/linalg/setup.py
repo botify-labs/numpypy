@@ -43,11 +43,11 @@ def configuration(parent_package='',top_path=None):
     # umath_linalg module
 
     config.add_extension('_umath_linalg',
-                     sources = [get_lapack_lite_sources],
-                     depends =  ['umath_linalg.c.src'] + lapack_lite_src,
-                     extra_info = lapack_info,
-                     libraries = ['npymath'],
-                     )
+                         sources = [get_lapack_lite_sources],
+                         depends =  ['umath_linalg.c.src'] + lapack_lite_src,
+                         extra_info = lapack_info,
+                         libraries = ['npymath'],
+                         )
 
     return config
 
