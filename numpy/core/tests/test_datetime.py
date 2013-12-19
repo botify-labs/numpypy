@@ -14,6 +14,7 @@ try:
 except ImportError:
     _has_pytz = False
 
+assert np.datetime64 is not None
 
 class TestDateTime(TestCase):
     def test_datetime_dtype_creation(self):

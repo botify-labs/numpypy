@@ -6,6 +6,8 @@ from numpy.testing import *
 from numpy.core import *
 from numpy.compat import asbytes, sixu
 
+array(sixu(''), dtype='unicode')
+
 # Guess the UCS length for this python interpreter
 if sys.version_info[:2] >= (3, 3):
     # Python 3.3 uses a flexible string representation

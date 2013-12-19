@@ -7,7 +7,7 @@ from numpy import array, arange, nditer, all
 from numpy.compat import asbytes, sixu
 from numpy.testing import *
 
-
+assert np.nditer is not None
 
 def iter_multi_index(i):
     ret = []
