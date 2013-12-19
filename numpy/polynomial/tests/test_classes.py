@@ -21,6 +21,7 @@ classes = (
     Polynomial, Legendre, Chebyshev, Laguerre,
     Hermite, HermiteE)
 
+np.negative(Polynomial([0]))
 
 def test_class_methods():
     for Poly1 in classes:

@@ -8,6 +8,7 @@ from numpy.compat import asbytes, sixu
 from numpy.testing import *
 from numpy.core.multiarray_tests import test_nditer_too_large
 
+assert np.nditer is not None
 
 def iter_multi_index(i):
     ret = []
