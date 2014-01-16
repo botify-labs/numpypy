@@ -38,14 +38,13 @@ __all__ = ['fft', 'ifft', 'rfft', 'irfft', 'hfft', 'ihfft', 'rfftn',
 from numpy.core import asarray, zeros, swapaxes, shape, conjugate, \
      take
 from . import fftpack_lite as fftpack
-from . import fft_cffi
 
 _fft_cache = {}
 _real_fft_cache = {}
 
-def _raw_fft(a, n=None, axis=-1, init_function=fft_cffi.cffti,
-             work_function=fft_cffi.cfftf, fft_cache = _fft_cache ):
-    a = asarray(a).astype(complex) # how could it work without .astype(complex) ?
+def _raw_fft(a, n=None, axis=-1, init_function=fftpack.cffti,
+             work_function=fftpack.cfftf, fft_cache = _fft_cache ):
+    a = asarray(a)
 
     if n is None:
         n = a.shape[axis]
@@ -164,7 +163,7 @@ def fft(a, n=None, axis=-1):
 
     """
 
-    return _raw_fft(a, n, axis, fft_cffi.cffti, fft_cffi.cfftf, _fft_cache)
+    return _raw_fft(a, n, axis, fftpack.cffti, fftpack.cfftf, _fft_cache)
 
 
 def ifft(a, n=None, axis=-1):
