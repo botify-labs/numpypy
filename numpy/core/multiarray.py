@@ -2,7 +2,10 @@ def _fastCopyAndTranspose(a):
     return a.T.copy()
 
 def copyto(dst, src, casting='same_kind', where=None):
-    dst.fill(src)
+    if where is None:
+        dst.fill(src)
+    else:
+        dst[where] = src
 
 def format_longfloat(x, precision):
     return "%%.%df" % precision % x
