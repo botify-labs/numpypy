@@ -280,7 +280,7 @@ def assert_equal(actual,desired,err_msg='',verbose=True):
     # XXX: catch ValueError for subclasses of ndarray where iscomplex fail
     try:
         usecomplex = iscomplexobj(actual) or iscomplexobj(desired)
-    except ValueError:
+    except (ValueError, NotImplementedError):
         usecomplex = False
 
     if usecomplex:
