@@ -1716,10 +1716,12 @@ class TestMethods(TestCase):
     def test_diagonal_memleak(self):
         # Regression test for a bug that crept in at one point
         a = np.zeros((100, 100))
-        assert_(sys.getrefcount(a) < 50)
+        if hasattr(sys, 'getrefcount'):
+            assert_(sys.getrefcount(a) < 50)
         for i in range(100):
             a.diagonal()
-        assert_(sys.getrefcount(a) < 50)
+        if hasattr(sys, 'getrefcount'):
+            assert_(sys.getrefcount(a) < 50)
 
     def test_ravel(self):
         a = np.array([[0, 1], [2, 3]])
@@ -3306,7 +3308,8 @@ class TestDot(TestCase):
         r = np.empty((1024, 32))
         for i in range(12):
             dot(f, v, r)
-        assert_equal(sys.getrefcount(r), 2)
+        if hasattr(sys, 'getrefcount'):
+            assert_equal(sys.getrefcount(r), 2)
         r2 = dot(f, v, out=None)
         assert_array_equal(r2, r)
         assert_(r is dot(f, v, out=r))
@@ -4025,12 +4028,14 @@ class TestNewBufferProtocol(object):
             self._check_roundtrip(x)
 
     def test_reference_leak(self):
-        count_1 = sys.getrefcount(np.core._internal)
+        if hasattr(sys, 'getrefcount'):
+            count_1 = sys.getrefcount(np.core._internal)
         a = np.zeros(4)
         b = memoryview(a)
         c = np.asarray(b)
-        count_2 = sys.getrefcount(np.core._internal)
-        assert_equal(count_1, count_2)
+        if hasattr(sys, 'getrefcount'):
+            count_2 = sys.getrefcount(np.core._internal)
+            assert_equal(count_1, count_2)
 
     def test_padded_struct_array(self):
         dt1 = np.dtype(

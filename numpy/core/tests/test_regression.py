@@ -644,6 +644,7 @@ class TestRegression(TestCase):
         np.random.shuffle(b)
         assert_equal(np.sort(b, axis=0), a)
 
+    @dec.skipif(not hasattr(sys, 'getrefcount'))
     def test_refcount_vdot(self, level=rlevel):
         """Changeset #3443"""
         _assert_valid_refcount(np.vdot)
@@ -1446,12 +1447,14 @@ class TestRegression(TestCase):
         """Ticket #1299 second test"""
         stra = 'aaaa'
         strb = 'bbbb'
-        numb = sys.getrefcount(strb)
-        numa = sys.getrefcount(stra)
+        if hasattr(sys, 'getrefcount'):
+            numb = sys.getrefcount(strb)
+            numa = sys.getrefcount(stra)
         x = np.array([[(0, stra), (1, strb)]], 'i8,O')
         x[x.nonzero()] = x.ravel()[:1]
-        assert_(sys.getrefcount(strb) == numb)
-        assert_(sys.getrefcount(stra) == numa + 2)
+        if hasattr(sys, 'getrefcount'):
+            assert_(sys.getrefcount(strb) == numb)
+            assert_(sys.getrefcount(stra) == numa + 2)
 
     def test_duplicate_title_and_name(self):
         """Ticket #1254"""
@@ -1562,13 +1565,15 @@ class TestRegression(TestCase):
         a.shape = (4, 4)
         lut = np.ones((5 + 3, 4), np.float)
         rgba = np.empty(shape=a.shape + (4,), dtype=lut.dtype)
-        c1 = sys.getrefcount(rgba)
+        if hasattr(sys, 'getrefcount'):
+            c1 = sys.getrefcount(rgba)
         try:
             lut.take(a, axis=0, mode='clip', out=rgba)
         except TypeError:
             pass
-        c2 = sys.getrefcount(rgba)
-        assert_equal(c1, c2)
+        if hasattr(sys, 'getrefcount'):
+            c2 = sys.getrefcount(rgba)
+            assert_equal(c1, c2)
 
     def test_fromfile_tofile_seeks(self):
         # On Python 3, tofile/fromfile used to get (#1610) the Python
@@ -1936,6 +1941,7 @@ class TestRegression(TestCase):
             a = np.empty((100000000,), dtype='i1')
             del a
 
+    @dec.skipif(not hasattr(sys, 'getrefcount'))
     def test_ufunc_reduce_memoryleak(self):
         a = np.arange(6)
         acnt = sys.getrefcount(a)

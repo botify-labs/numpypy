@@ -51,7 +51,8 @@ def test_dot_3args():
     r = np.empty((1024, 32))
     for i in range(12):
         np.dot(f, v, r)
-    assert_equal(sys.getrefcount(r), 2)
+    if hasattr(sys, 'getrefcount'):
+        assert_equal(sys.getrefcount(r), 2)
     r2 = np.dot(f, v, out=None)
     assert_array_equal(r2, r)
     assert_(r is np.dot(f, v, out=r))

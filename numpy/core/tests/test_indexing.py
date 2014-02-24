@@ -858,10 +858,12 @@ class TestMultiIndexingAutomated(TestCase):
         try:
             mimic_get, no_copy = self._get_multi_index(arr, index)
         except Exception as e:
-            prev_refcount = sys.getrefcount(arr)
+            if hasattr(sys, 'getrefcount'):
+                prev_refcount = sys.getrefcount(arr)
             assert_raises(Exception, arr.__getitem__, index)
             assert_raises(Exception, arr.__setitem__, index, 0)
-            assert_equal(prev_refcount, sys.getrefcount(arr))
+            if hasattr(sys, 'getrefcount'):
+                assert_equal(prev_refcount, sys.getrefcount(arr))
             return
 
         self._compare_index_result(arr, index, mimic_get, no_copy)
@@ -881,10 +883,12 @@ class TestMultiIndexingAutomated(TestCase):
         try:
             mimic_get, no_copy = self._get_multi_index(arr, (index,))
         except Exception as e:
-            prev_refcount = sys.getrefcount(arr)
+            if hasattr(sys, 'getrefcount'):
+                prev_refcount = sys.getrefcount(arr)
             assert_raises(Exception, arr.__getitem__, index)
             assert_raises(Exception, arr.__setitem__, index, 0)
-            assert_equal(prev_refcount, sys.getrefcount(arr))
+            if hasattr(sys, 'getrefcount'):
+                assert_equal(prev_refcount, sys.getrefcount(arr))
             return
 
         self._compare_index_result(arr, index, mimic_get, no_copy)
@@ -900,12 +904,13 @@ class TestMultiIndexingAutomated(TestCase):
         # (then its not a view, and that does not matter)
         if indexed_arr.size != 0 and indexed_arr.ndim != 0:
             assert_(np.may_share_memory(indexed_arr, arr) == no_copy)
-            # Check reference count of the original array
-            if no_copy:
-                # refcount increases by one:
-                assert_equal(sys.getrefcount(arr), 3)
-            else:
-                assert_equal(sys.getrefcount(arr), 2)
+            if hasattr(sys, 'getrefcount'):
+                # Check reference count of the original array
+                if no_copy:
+                    # refcount increases by one:
+                    assert_equal(sys.getrefcount(arr), 3)
+                else:
+                    assert_equal(sys.getrefcount(arr), 2)
 
         # Test non-broadcast setitem:
         b = arr.copy()
