@@ -1559,6 +1559,7 @@ class TestCreationFuncs(TestCase):
         self.check_function(np.full, 0)
         self.check_function(np.full, 1)
 
+    @dec.skipif(not hasattr(sys, 'getrefcount'))
     def test_for_reference_leak(self):
         # Make sure we have an object for reference
         dim = 1
