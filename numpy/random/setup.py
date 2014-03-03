@@ -40,7 +40,19 @@ def configuration(parent_package='',top_path=None):
 
     libs = []
     # Configure mtrand
-    if '__pypy__' not in sys.builtin_module_names:
+    if '__pypy__' in sys.builtin_module_names:
+        #create the dll/so for the cffi version
+        # XXX this is wrong, we really want just a link_shared_object,
+        #     not a c extension module
+        config.add_extension('_mtrand',
+                         sources=[join('mtrand', x) for x in
+                                  ['randomkit.c', 'distributions.c']],
+                         libraries=libs,
+                         depends = [join('mtrand', '*.h'),
+                                    ],
+                         define_macros = defs,
+                        )
+    else:
         config.add_extension('mtrand',
                          sources=[join('mtrand', x) for x in
                                   ['mtrand.c', 'randomkit.c', 'initarray.c',
