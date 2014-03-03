@@ -173,6 +173,11 @@ class TestPower(TestCase):
         x = np.array([1, 2, 3], np.int16)
         assert_((x**2.00001).dtype is (x**2.0).dtype)
 
+        # Check that the fast path ignores 1-element not 0-d arrays
+        res = x ** np.array([[[2]]])
+        assert_equal(res.shape, (1, 1, 3))
+
+
 class TestLog2(TestCase):
     def test_log2_values(self) :
         x = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
@@ -303,11 +308,27 @@ class TestLog1p(TestCase):
         assert_almost_equal(ncu.log1p(0.2), ncu.log(1.2))
         assert_almost_equal(ncu.log1p(1e-6), ncu.log(1+1e-6))
 
+    def test_special(self):
+        assert_equal(ncu.log1p(np.nan), np.nan)
+        assert_equal(ncu.log1p(np.inf), np.inf)
+        with np.errstate(divide="ignore"):
+            assert_equal(ncu.log1p(-1.), -np.inf)
+        with np.errstate(invalid="ignore"):
+            assert_equal(ncu.log1p(-2.), np.nan)
+            assert_equal(ncu.log1p(-np.inf), np.nan)
+
 
 class TestExpm1(TestCase):
     def test_expm1(self):
         assert_almost_equal(ncu.expm1(0.2), ncu.exp(0.2)-1)
         assert_almost_equal(ncu.expm1(1e-6), ncu.exp(1e-6)-1)
+
+    def test_special(self):
+        assert_equal(ncu.expm1(np.inf), np.inf)
+        assert_equal(ncu.expm1(0.), 0.)
+        assert_equal(ncu.expm1(-0.), -0.)
+        assert_equal(ncu.expm1(np.inf), np.inf)
+        assert_equal(ncu.expm1(-np.inf), -1.)
 
 
 class TestHypot(TestCase, object):
