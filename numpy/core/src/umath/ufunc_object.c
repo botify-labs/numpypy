@@ -2090,6 +2090,11 @@ PyUFunc_GeneralizedFunction(PyUFuncObject *ufunc,
      */
     inner_strides = (npy_intp *)PyArray_malloc(
                         NPY_SIZEOF_INTP * (nop+core_dim_ixs_size));
+    if (inner_strides == NULL) {
+        PyErr_NoMemory();
+        retval = -1;
+        goto fail;
+    }
     /* Copy the strides after the first nop */
     idim = nop;
     for (i = 0; i < nop; ++i) {
@@ -2196,11 +2201,13 @@ PyUFunc_GeneralizedFunction(PyUFuncObject *ufunc,
                         PyErr_Format(PyExc_ValueError,
                                 "ufunc %s ",
                                 ufunc_name);
+                        retval = -1;
                         goto fail;
                     default:
                         PyErr_Format(PyExc_ValueError,
                                 "ufunc %s has an invalid identity for reduction",
                                 ufunc_name);
+                        retval = -1;
                         goto fail;
                 }
             }
@@ -2379,7 +2386,7 @@ PyUFunc_GenericFunction(PyUFuncObject *ufunc,
     */
     if (nin == 2 && nout == 1 && dtypes[1]->type_num == NPY_OBJECT) {
         PyObject *_obj = PyTuple_GET_ITEM(args, 1);
-        if (!PyArray_CheckExact(_obj)) {
+        if (!PyArray_Check(_obj)) {
             double self_prio, other_prio;
             self_prio = PyArray_GetPriority(PyTuple_GET_ITEM(args, 0),
                                                         NPY_SCALAR_PRIORITY);

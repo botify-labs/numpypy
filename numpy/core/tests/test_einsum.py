@@ -33,6 +33,9 @@ class TestEinSum(TestCase):
         # other keyword arguments are rejected
         assert_raises(TypeError, np.einsum, "", 0, bad_arg=0)
 
+        # issue 4528 revealed a segfault with this call
+        assert_raises(TypeError, np.einsum, *(None,)*63)
+
         # number of operands must match count in subscripts string
         assert_raises(ValueError, np.einsum, "", 0, 0)
         assert_raises(ValueError, np.einsum, ",", 0, [0], [0])
@@ -499,6 +502,37 @@ class TestEinSum(TestCase):
         assert_equal(np.einsum('x,yx,zx->xzy', a, b, c),
                     [[[1,  3], [3,  9], [5, 15], [7, 21]],
                     [[8, 16], [16, 32], [24, 48], [32, 64]]])
+
+    def test_einsum_fixedstridebug(self):
+        # Issue #4485 obscure einsum bug
+        # This case revealed a bug in nditer where it reported a stride
+        # as 'fixed' (0) when it was in fact not fixed during processing
+        # (0 or 4). The reason for the bug was that the check for a fixed
+        # stride was using the information from the 2D inner loop reuse
+        # to restrict the iteration dimensions it had to validate to be
+        # the same, but that 2D inner loop reuse logic is only triggered
+        # during the buffer copying step, and hence it was invalid to
+        # rely on those values. The fix is to check all the dimensions
+        # of the stride in question, which in the test case reveals that
+        # the stride is not fixed.
+        #
+        # NOTE: This test is triggered by the fact that the default buffersize,
+        #       used by einsum, is 8192, and 3*2731 = 8193, is larger than that
+        #       and results in a mismatch between the buffering and the
+        #       striding for operand A.
+        A = np.arange(2*3).reshape(2,3).astype(np.float32)
+        B = np.arange(2*3*2731).reshape(2,3,2731).astype(np.int16)
+        es = np.einsum('cl,cpx->lpx', A, B)
+        tp = np.tensordot(A, B, axes=(0, 0))
+        assert_equal(es, tp)
+        # The following is the original test case from the bug report,
+        # made repeatable by changing random arrays to aranges.
+        A = np.arange(3*3).reshape(3,3).astype(np.float64)
+        B = np.arange(3*3*64*64).reshape(3,3,64,64).astype(np.float32)
+        es = np.einsum ('cl,cpxy->lpxy', A,B)
+        tp = np.tensordot(A,B, axes=(0,0))
+        assert_equal(es, tp)
+
 
 if __name__ == "__main__":
     run_module_suite()

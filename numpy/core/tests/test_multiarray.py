@@ -424,21 +424,28 @@ class TestCreation(TestCase):
             assert_equal(np.count_nonzero(d), 0)
             # true for ieee floats
             assert_equal(d.sum(), 0)
-
-            d = np.zeros((30 * 1024**2,), dtype=dt)
-            assert_equal(np.count_nonzero(d), 0)
-            assert_equal(d.sum(), 0)
+            assert_(not d.any())
 
             d = np.zeros(2, dtype='(2,4)i4')
             assert_equal(np.count_nonzero(d), 0)
             assert_equal(d.sum(), 0)
+            assert_(not d.any())
 
             d = np.zeros(2, dtype='4i4')
             assert_equal(np.count_nonzero(d), 0)
             assert_equal(d.sum(), 0)
+            assert_(not d.any())
 
             d = np.zeros(2, dtype='(2,4)i4, (2,4)i4')
             assert_equal(np.count_nonzero(d), 0)
+
+    @dec.slow
+    def test_zeros_big(self):
+        # test big array as they might be allocated different by the sytem
+        types = np.typecodes['AllInteger'] + np.typecodes['AllFloat']
+        for dt in types:
+            d = np.zeros((30 * 1024**2,), dtype=dt)
+            assert_(not d.any())
 
     def test_zeros_obj(self):
         # test initialization from PyLong(0)
@@ -2824,6 +2831,23 @@ class TestDot(TestCase):
 
         r = np.empty((1024, 32), dtype=int)
         assert_raises(ValueError, dot, f, v, r)
+
+    def test_dot_scalar_and_matrix_of_objects(self):
+        # Ticket #2469
+        arr = np.matrix([1, 2], dtype=object)
+        desired = np.matrix([[3, 6]], dtype=object)
+        assert_equal(np.dot(arr, 3), desired)
+        assert_equal(np.dot(3, arr), desired)
+
+
+class TestInner(TestCase):
+
+    def test_inner_scalar_and_matrix_of_objects(self):
+        # Ticket #4482
+        arr = np.matrix([1, 2], dtype=object)
+        desired = np.matrix([[3, 6]], dtype=object)
+        assert_equal(np.inner(arr, 3), desired)
+        assert_equal(np.inner(3, arr), desired)
 
 
 class TestSummarization(TestCase):
