@@ -33,6 +33,7 @@ def randint(low, high=None, size=None):
     if high is None:
         high = low
         low = 0
+    high -= 1
     if size is None:
         return _rand.randint(low, high)
     ret = zeros(size, dtype='int')
