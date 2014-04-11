@@ -161,6 +161,7 @@ class TestRegression(TestCase):
             i = np.random.randint(0, n, size=thesize)
             a[np.ix_(i, i, i, i, i)]
 
+        assert False  # XXX hangs
         self.assertRaises(ValueError, dp)
         self.assertRaises(ValueError, dp2)
 
