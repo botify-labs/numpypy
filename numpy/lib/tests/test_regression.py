@@ -153,6 +153,7 @@ class TestRegression(TestCase):
             a = np.ones((n,)*5)
             i = np.random.randint(0, n, size=thesize)
             g = a[np.ix_(i, i, i, i, i)]
+        assert False  # XXX hangs
         self.assertRaises(ValueError, dp)
         self.assertRaises(ValueError, dp2)
 
