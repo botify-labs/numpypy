@@ -2645,8 +2645,8 @@ class RandomState(object):
             if fscale <= 0:
                 raise ValueError("scale <= 0")
             return cont2_array_sc(self.internal_state, _mtrand.rk_laplace, size, floc, fscale)
-        oloc = PyArray_FROM_OTF(loc, np.float64) # aligned?
-        oscale = PyArray_FROM_OTF(scale, np.float64) # aligned?
+        oloc = np.array(loc, np.float64) # aligned?
+        oscale = np.array(scale, np.float64) # aligned?
         if np.any(np.less_equal(oscale, 0.0)):
             raise ValueError("scale <= 0")
         return cont2_array(self.internal_state, _mtrand.rk_laplace, size, oloc, oscale)
@@ -2774,8 +2774,8 @@ class RandomState(object):
             if fscale <= 0:
                 raise ValueError("scale <= 0")
             return cont2_array_sc(self.internal_state, _mtrand.rk_gumbel, size, floc, fscale)
-        oloc = PyArray_FROM_OTF(loc, np.float64) # aligned?
-        oscale = PyArray_FROM_OTF(scale, np.float64) # aligned?
+        oloc = np.array(loc, np.float64) # aligned?
+        oscale = np.array(scale, np.float64) # aligned?
         if np.any(np.less_equal(oscale, 0.0)):
             raise ValueError("scale <= 0")
         return cont2_array(self.internal_state, _mtrand.rk_gumbel, size, oloc, oscale)
@@ -2860,8 +2860,8 @@ class RandomState(object):
             if fscale <= 0:
                 raise ValueError("scale <= 0")
             return cont2_array_sc(self.internal_state, _mtrand.rk_logistic, size, floc, fscale)
-        oloc = PyArray_FROM_OTF(loc, np.float64) # aligned?
-        oscale = PyArray_FROM_OTF(scale, np.float64) # aligned?
+        oloc = np.array(loc, np.float64) # aligned?
+        oscale = np.array(scale, np.float64) # aligned?
         if np.any(np.less_equal(oscale, 0.0)):
             raise ValueError("scale <= 0")
         return cont2_array(self.internal_state, _mtrand.rk_logistic, size, oloc, oscale)
@@ -2978,8 +2978,8 @@ class RandomState(object):
                 raise ValueError("sigma <= 0")
             return cont2_array_sc(self.internal_state, _mtrand.rk_lognormal, size, fmean, fsigma)
 
-        omean = PyArray_FROM_OTF(mean, np.float64) # aligned?
-        osigma = PyArray_FROM_OTF(sigma, np.float64) # aligned?
+        omean = np.array(mean, np.float64) # aligned?
+        osigma = np.array(sigma, np.float64) # aligned?
         if np.any(np.less_equal(osigma, 0.0)):
             raise ValueError("sigma <= 0.0")
         return cont2_array(self.internal_state, _mtrand.rk_lognormal, size, omean, osigma)
@@ -3127,8 +3127,8 @@ class RandomState(object):
             if fscale <= 0:
                 raise ValueError("scale <= 0")
             return cont2_array_sc(self.internal_state, _mtrand.rk_wald, size, fmean, fscale)
-        omean = PyArray_FROM_OTF(mean, np.float64) # aligned?
-        oscale = PyArray_FROM_OTF(scale, np.float64) # aligned?
+        omean = np.array(mean, np.float64) # aligned?
+        oscale = np.array(scale, np.float64) # aligned?
         if np.any(np.less_equal(omean,0.0)):
             raise ValueError("mean <= 0.0")
         elif np.any(np.less_equal(oscale,0.0)):
@@ -3306,7 +3306,7 @@ class RandomState(object):
         """
         try:
             fp = float(p)
-            ln = PyInt_AsLong(n)
+            ln = long(n)
         except:
             pass
         else:
@@ -3725,9 +3725,9 @@ class RandomState(object):
 
         """
         try:
-            lngood = PyInt_AsLong(ngood)
-            lnbad = PyInt_AsLong(nbad)
-            lnsample = PyInt_AsLong(nsample)
+            lngood = long(ngood)
+            lnbad = long(nbad)
+            lnsample = long(nsample)
         except:
             pass
         else:
@@ -4049,10 +4049,9 @@ class RandomState(object):
             shape = size + (d,)
 
         multin = np.zeros(shape, int)
-        mnarr = np.array(multin)
-        mnix = mnarr.flat
+        mnix = multin.flat
         i = 0
-        while i < mnarr.size:
+        while i < multin.size:
             Sum = 1.0
             dn = n
             for j in range(d-1):
