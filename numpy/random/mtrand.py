@@ -2,8 +2,10 @@ import os, imp
 from cffi import FFI
 ffi = FFI()
 import numpy as np
+import operator
 
 ffi.cdef('''
+/* from randomkit.h */
 //#define RK_STATE_LEN 624
 
 typedef struct rk_state_
@@ -120,6 +122,181 @@ extern rk_error rk_altfill(void *buffer, size_t size, int strong,
  */
 extern double rk_gauss(rk_state *state);
 
+/* end of randomkit.h */
+
+/* from distributions.h */
+/* Copyright 2005 Robert Kern (robert.kern@gmail.com)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+/* References:
+ *
+ * Devroye, Luc. _Non-Uniform Random Variate Generation_.
+ *  Springer-Verlag, New York, 1986.
+ *  http://cgm.cs.mcgill.ca/~luc/rnbookindex.html
+ *
+ * Kachitvichyanukul, V. and Schmeiser, B. W. Binomial Random Variate
+ *  Generation. Communications of the ACM, 31, 2 (February, 1988) 216.
+ *
+ * Hoermann, W. The Transformed Rejection Method for Generating Poisson Random
+ *  Variables. Insurance: Mathematics and Economics, (to appear)
+ *  http://citeseer.csail.mit.edu/151115.html
+ *
+ * Marsaglia, G. and Tsang, W. W. A Simple Method for Generating Gamma
+ * Variables. ACM Transactions on Mathematical Software, Vol. 26, No. 3,
+ * September 2000, Pages 363–372.
+ */
+
+/* Normal distribution with mean=loc and standard deviation=scale. */
+extern double rk_normal(rk_state *state, double loc, double scale);
+
+/* Standard exponential distribution (mean=1) computed by inversion of the
+ * CDF. */
+extern double rk_standard_exponential(rk_state *state);
+
+/* Exponential distribution with mean=scale. */
+extern double rk_exponential(rk_state *state, double scale);
+
+/* Uniform distribution on interval [loc, loc+scale). */
+extern double rk_uniform(rk_state *state, double loc, double scale);
+
+/* Standard gamma distribution with shape parameter.
+ * When shape < 1, the algorithm given by (Devroye p. 304) is used.
+ * When shape == 1, a Exponential variate is generated.
+ * When shape > 1, the small and fast method of (Marsaglia and Tsang 2000)
+ * is used.
+ */
+extern double rk_standard_gamma(rk_state *state, double shape);
+
+/* Gamma distribution with shape and scale. */
+extern double rk_gamma(rk_state *state, double shape, double scale);
+
+/* Beta distribution computed by combining two gamma variates (Devroye p. 432).
+ */
+extern double rk_beta(rk_state *state, double a, double b);
+
+/* Chi^2 distribution computed by transforming a gamma variate (it being a
+ * special case Gamma(df/2, 2)). */
+extern double rk_chisquare(rk_state *state, double df);
+
+/* Noncentral Chi^2 distribution computed by modifying a Chi^2 variate. */
+extern double rk_noncentral_chisquare(rk_state *state, double df, double nonc);
+
+/* F distribution computed by taking the ratio of two Chi^2 variates. */
+extern double rk_f(rk_state *state, double dfnum, double dfden);
+
+/* Noncentral F distribution computed by taking the ratio of a noncentral Chi^2
+ * and a Chi^2 variate. */
+extern double rk_noncentral_f(rk_state *state, double dfnum, double dfden, double nonc);
+
+/* Binomial distribution with n Bernoulli trials with success probability p.
+ * When n*p <= 30, the "Second waiting time method" given by (Devroye p. 525) is
+ * used. Otherwise, the BTPE algorithm of (Kachitvichyanukul and Schmeiser 1988)
+ * is used. */
+extern long rk_binomial(rk_state *state, long n, double p);
+
+/* Binomial distribution using BTPE. */
+extern long rk_binomial_btpe(rk_state *state, long n, double p);
+
+/* Binomial distribution using inversion and chop-down */
+extern long rk_binomial_inversion(rk_state *state, long n, double p);
+
+/* Negative binomial distribution computed by generating a Gamma(n, (1-p)/p)
+ * variate Y and returning a Poisson(Y) variate (Devroye p. 543). */
+extern long rk_negative_binomial(rk_state *state, double n, double p);
+
+/* Poisson distribution with mean=lam.
+ * When lam < 10, a basic algorithm using repeated multiplications of uniform
+ * variates is used (Devroye p. 504).
+ * When lam >= 10, algorithm PTRS from (Hoermann 1992) is used.
+ */
+extern long rk_poisson(rk_state *state, double lam);
+
+/* Poisson distribution computed by repeated multiplication of uniform variates.
+ */
+extern long rk_poisson_mult(rk_state *state, double lam);
+
+/* Poisson distribution computer by the PTRS algorithm. */
+extern long rk_poisson_ptrs(rk_state *state, double lam);
+
+/* Standard Cauchy distribution computed by dividing standard gaussians
+ * (Devroye p. 451). */
+extern double rk_standard_cauchy(rk_state *state);
+
+/* Standard t-distribution with df degrees of freedom (Devroye p. 445 as
+ * corrected in the Errata). */
+extern double rk_standard_t(rk_state *state, double df);
+
+/* von Mises circular distribution with center mu and shape kappa on [-pi,pi]
+ * (Devroye p. 476 as corrected in the Errata). */
+extern double rk_vonmises(rk_state *state, double mu, double kappa);
+
+/* Pareto distribution via inversion (Devroye p. 262) */
+extern double rk_pareto(rk_state *state, double a);
+
+/* Weibull distribution via inversion (Devroye p. 262) */
+extern double rk_weibull(rk_state *state, double a);
+
+/* Power distribution via inversion (Devroye p. 262) */
+extern double rk_power(rk_state *state, double a);
+
+/* Laplace distribution */
+extern double rk_laplace(rk_state *state, double loc, double scale);
+
+/* Gumbel distribution */
+extern double rk_gumbel(rk_state *state, double loc, double scale);
+
+/* Logistic distribution */
+extern double rk_logistic(rk_state *state, double loc, double scale);
+
+/* Log-normal distribution */
+extern double rk_lognormal(rk_state *state, double mean, double sigma);
+
+/* Rayleigh distribution */
+extern double rk_rayleigh(rk_state *state, double mode);
+
+/* Wald distribution */
+extern double rk_wald(rk_state *state, double mean, double scale);
+
+/* Zipf distribution */
+extern long rk_zipf(rk_state *state, double a);
+
+/* Geometric distribution */
+extern long rk_geometric(rk_state *state, double p);
+extern long rk_geometric_search(rk_state *state, double p);
+extern long rk_geometric_inversion(rk_state *state, double p);
+
+/* Hypergeometric distribution */
+extern long rk_hypergeometric(rk_state *state, long good, long bad, long sample);
+extern long rk_hypergeometric_hyp(rk_state *state, long good, long bad, long sample);
+extern long rk_hypergeometric_hrua(rk_state *state, long good, long bad, long sample);
+
+/* Triangular distribution */
+extern double rk_triangular(rk_state *state, double left, double mode, double right);
+
+/* Logarithmic series distribution */
+extern long rk_logseries(rk_state *state, double p);
+
+
+
+
 ''')
 
 # XXX this should open a shared object, not a extension module
@@ -169,12 +346,13 @@ def rand_array(state, func, size, dtypes, *args):
     if size is None:
         array = None
     else:
-        array = np.empty(size, dtype)
-    multi = np.nditer([array,] + args, op_dtypes=dtypes)
-    if multi.size != array.size:
+        array = np.empty(size, dtypes[0])
+    multi = np.nditer([array,] + list(args), op_dtypes=dtypes,
+                op_flags=[['writeonly', 'allocate']] + [['readonly']]*len(args))
+    if multi.itersize != multi.operands[0].size:
         raise ValueError("size is not compatible with inputs")
     for it in multi:
-        it[0] = func(state, *it[1:])
+        it[0][...] = func(state, *it[1:])
     return multi.operands[0]
 
 def cont3_array_sc(state, func, size, a, b, c):
@@ -197,25 +375,25 @@ def discnp_array_sc(state, func, size, n, p):
     return array_sc(state, func, size, int, n, p)
 
 def discnp_array(state, func, size, on, op):
-    return rand_array(stat, func, size, [np.long, on.dtype, op.dtype], on, op)
+    return rand_array(state, func, size, [np.long, on.dtype, op.dtype], on, op)
 
 def discdd_array_sc(state, func, size, n, p):
     return array_sc(state, func, size, int, n, p)
 
 def discdd_array(state, func, size, on, op):
-    return rand_array(stat, func, size, [np.long, on.dtype, op.dtype], on, op)
+    return rand_array(state, func, size, [np.long, on.dtype, op.dtype], on, op)
 
 def discnmN_array_sc(state, func, size, n, m, N):
     return array_sc(state, func, size, int, n, m, N)
 
 def discnmN_array(state, func, size, on, om, oN):
-    return rand_array(stat, func, size, [np.long, on.dtype, om.dtype, oN.dtype], on, op)
+    return rand_array(state, func, size, [np.long, on.dtype, om.dtype, oN.dtype], on, om, oN)
 
 def discd_array_sc(state, func, size, a):
     return array_sc(state, func, size, int, a)
 
 def discd_array(state, func, size, oa):
-    return rand_array(stat, func, size, [np.long, oa.dtype], oa)
+    return rand_array(state, func, size, [np.long, oa.dtype], oa)
 
 def kahan_sum(darr, n):
     ret = darr[0]
@@ -394,14 +572,14 @@ class RandomState(object):
         else:
             has_gauss, cached_gaussian = state[3:5]
         try:
-            obj = np.array(key, np.ulong)
+            obj = np.array(key, np.uint64)
         except TypeError:
             # compatibility -- could be an older pickle
             obj = np.array(key, np.long)
         if obj.shape[0] != 624:
             raise ValueError("state must be 624 longs")
         for i in range(624):
-            self.internal_state.key = obj[i]
+            self.internal_state.key[i] = obj[i]
         self.internal_state.pos = pos
         self.internal_state.has_gauss = has_gauss
         self.internal_state.gauss = cached_gaussian
@@ -575,9 +753,8 @@ class RandomState(object):
             array = np.empty(size, int)
             ai = array.flat
             for i in xrange(array.size):
-                ai[i] = func(state)
                 rv = lo + _mtrand.rk_interval(diff, self. internal_state)
-                array_data[i] = rv
+                ai[i] = rv
             return array
 
     def bytes(self, length):
@@ -3141,7 +3318,7 @@ class RandomState(object):
                 raise ValueError("p > 1")
             return discnp_array_sc(self.internal_state, _mtrand.rk_binomial, size, ln, fp)
 
-        on = np.array(n, NPY_LONG) # aligned?
+        on = np.array(n, np.long) # aligned?
         op = np.array(p, np.float64) # aligned?
         if np.any(np.less(n, 0)):
             raise ValueError("n < 0")
@@ -3565,9 +3742,9 @@ class RandomState(object):
             return discnmN_array_sc(self.internal_state, _mtrand.rk_hypergeometric, size,
                                     lngood, lnbad, lnsample)
 
-        ongood = np.array(ngood, NPY_LONG) # aligned?
-        onbad = np.array(nbad, NPY_LONG) # aligned?
-        onsample = np.array(nsample, NPY_LONG) # aligned?
+        ongood = np.array(ngood, np.long) # aligned?
+        onbad = np.array(nbad, np.long) # aligned?
+        onsample = np.array(nsample, np.long) # aligned?
         if np.any(np.less(ongood, 0)):
             raise ValueError("ngood < 0")
         if np.any(np.less(onbad, 0)):
@@ -3953,22 +4130,50 @@ class RandomState(object):
         #=================
         # Pure python algo
         #=================
-        alpha   = np.atleast_1d(alpha)
-        k       = alpha.size
+        #alpha   = N.atleast_1d(alpha)
+        #k       = alpha.size
 
-        if n == 1:
-            val = N.zeros(k)
-            for i in range(k):
-                val[i]   = sgamma(alpha[i], n)
-            val /= N.sum(val)
+        #if n == 1:
+        #    val = N.zeros(k)
+        #    for i in range(k):
+        #        val[i]   = sgamma(alpha[i], n)
+        #    val /= N.sum(val)
+        #else:
+        #    val = N.zeros((k, n))
+        #    for i in range(k):
+        #        val[i]   = sgamma(alpha[i], n)
+        #    val /= N.sum(val, axis = 0)
+        #    val = val.T
+
+        #return val
+
+        alpha   = np.array(alpha, np.float64)
+        k           = alpha.size
+
+        if size is None:
+            shape = (k,)
+        elif type(size) is int:
+            shape = (size, k)
         else:
-            val = N.zeros((k, n))
-            for i in range(k):
-                val[i]   = sgamma(alpha[i], n)
-            val /= N.sum(val, axis = 0)
-            val = val.T
+            shape = size + (k,)
 
-        return val
+        diric   = np.zeros(shape, np.float64)
+        val_data = diric.flat
+        alpha_data = alpha.flat
+
+        i = 0
+        totsize = diric.size
+        while i < totsize:
+            acc = 0.0
+            for j in range(k):
+                val_data[i+j]   = _mtrand.rk_standard_gamma(self.internal_state, alpha_data[j])
+                acc             = acc + val_data[i+j]
+            invacc  = 1/acc
+            for j in range(k):
+                val_data[i+j]   = val_data[i+j] * invacc
+            i = i + k
+
+        return diric
 
     # Shuffling and permutations:
     def shuffle(self, x):
