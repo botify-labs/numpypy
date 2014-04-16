@@ -1,4 +1,4 @@
-import os
+import os, imp
 from cffi import FFI
 ffi = FFI()
 import numpy as np
@@ -123,20 +123,14 @@ extern double rk_gauss(rk_state *state);
 ''')
 
 # XXX this should open a shared object, not a extension module
-import imp as __imp
-suffixes = __imp.get_suffixes()
+
+suffixes = imp.get_suffixes()
 for suffix, mode, typ in suffixes:
-    if typ == __imp.C_EXTENSION:
+    if typ == imp.C_EXTENSION:
         break
 _mtrand = ffi.dlopen(os.path.abspath(os.path.dirname(__file__)) + '/_mtrand' + suffix)
 
 seed = _mtrand.rk_seed
-
-_rand = RandomState()
-
-for attr in dir(_rand):
-    if not attr.startswith('_'):
-        globals()[attr] = getattr(_rand, attr)
 
 def cont0_array(state, func, size):
     if size is None:
@@ -266,10 +260,10 @@ class RandomState(object):
 
     """
     poisson_lam_max = np.iinfo('l').max - np.sqrt(np.iinfo('l').max)*10
+    internal_state = None
 
     def __init__(self, seed=None):
-        self.internal_state = rk_state()
-
+        self.internal_state = ffi.new('rk_state *')
         self.seed(seed)
 
     def __del__(self):
@@ -296,12 +290,12 @@ class RandomState(object):
 
         """
         if seed is None:
-            errcode = rk_randomseed(self.internal_state)
+            errcode = _mtrand.rk_randomseed(self.internal_state)
         elif type(seed) is int:
-            rk_seed(seed, self.internal_state)
+            _errcode = _mtrand.rk_seed(seed, self.internal_state)
         elif isinstance(seed, np.integer):
             iseed = int(seed)
-            rk_seed(iseed, self.internal_state)
+            _mtrand.rk_seed(iseed, self.internal_state)
         else:
             obj = np.array(seed, int)
             init_by_array(self.internal_state, obj, obj.shape[0])
@@ -464,7 +458,7 @@ class RandomState(object):
                [-1.23204345, -1.75224494]])
 
         """
-        return cont0_array(self.internal_state, rk_double, size)
+        return cont0_array(self.internal_state, _mtrand.rk_double, size)
 
     def tomaxint(self, size=None):
         """
@@ -511,7 +505,7 @@ class RandomState(object):
                 [ True,  True]]], dtype=bool)
 
         """
-        return disc0_array(self.internal_state, rk_long, size)
+        return disc0_array(self.internal_state, _mtrand.rk_long, size)
 
     def randint(self, low, high=None, size=None):
         """
@@ -575,14 +569,14 @@ class RandomState(object):
 
         diff = hi - lo - 1
         if size is None:
-            rv = lo + rk_interval(diff, self. internal_state)
+            rv = lo + _mtrand.rk_interval(diff, self. internal_state)
             return rv
         else:
             array = np.empty(size, int)
             ai = array.flat
             for i in xrange(array.size):
                 ai[i] = func(state)
-                rv = lo + rk_interval(diff, self. internal_state)
+                rv = lo + _mtrand.rk_interval(diff, self. internal_state)
                 array_data[i] = rv
             return array
 
@@ -608,8 +602,8 @@ class RandomState(object):
         ' eh\\x85\\x022SZ\\xbf\\xa4' #random
 
         """
-        bytestring = '\x0' * length
-        rk_fill(bytestring, length, self.internal_state)
+        bytestring = '0' * length
+        _mtrand.rk_fill(bytestring, length, self.internal_state)
         return bytestring
 
 
@@ -856,16 +850,16 @@ class RandomState(object):
 
         """
         try:
-            flow = PyFloat_AsDouble(low)
-            fhigh = PyFloat_AsDouble(high)
+            flow = float(low)
+            fhigh = float(high)
         except:
             pass
         else:
-            return cont2_array_sc(self.internal_state, rk_uniform, size, flow, fhigh-flow)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_uniform, size, flow, fhigh-flow)
         olow = np.array(low, np.float64) # aligned?
         ohigh = np.array(high, np.float64) # aligned?
         odiff = np.subtract(ohigh, olow)
-        return cont2_array(self.internal_state, rk_uniform, size, olow, odiff)
+        return cont2_array(self.internal_state, _mtrand.rk_uniform, size, olow, odiff)
 
     def rand(self, *args):
         """
@@ -1076,7 +1070,7 @@ class RandomState(object):
         (3, 4, 2)
 
         """
-        return cont0_array(self.internal_state, rk_gauss, size)
+        return cont0_array(self.internal_state, _mtrand.rk_gauss, size)
 
     def normal(self, loc=0.0, scale=1.0, size=None):
         """
@@ -1161,19 +1155,19 @@ class RandomState(object):
 
         """
         try:
-            floc = PyFloat_AsDouble(loc)
-            fscale = PyFloat_AsDouble(scale)
+            floc = float(loc)
+            fscale = float(scale)
         except:
             pass
         else:
             if fscale <= 0:
                 raise ValueError("scale <= 0")
-            return cont2_array_sc(self.internal_state, rk_normal, size, floc, fscale)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_normal, size, floc, fscale)
         oloc = np.array(loc, np.float64) # aligned?
         oscale = np.array(scale, np.float64) # aligned?
         if np.any(np.less_equal(oscale, 0)):
             raise ValueError("scale <= 0")
-        return cont2_array(self.internal_state, rk_normal, size, oloc, oscale)
+        return cont2_array(self.internal_state, _mtrand.rk_normal, size, oloc, oscale)
 
     def beta(self, a, b, size=None):
         """
@@ -1213,8 +1207,8 @@ class RandomState(object):
 
         """
         try:
-            fa = PyFloat_AsDouble(a)
-            fb = PyFloat_AsDouble(b)
+            fa = float(a)
+            fb = float(b)
         except:
             pass
         else:
@@ -1222,7 +1216,7 @@ class RandomState(object):
                 raise ValueError("a <= 0")
             if fb <= 0:
                 raise ValueError("b <= 0")
-            return cont2_array_sc(self.internal_state, rk_beta, size, fa, fb)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_beta, size, fa, fb)
 
         oa = np.array(a, np.float64) # aligned?
         ob = np.array(b, np.float64) # aligned?
@@ -1230,7 +1224,7 @@ class RandomState(object):
             raise ValueError("a <= 0")
         if np.any(np.less_equal(ob, 0)):
             raise ValueError("b <= 0")
-        return cont2_array(self.internal_state, rk_beta, size, oa, ob)
+        return cont2_array(self.internal_state, _mtrand.rk_beta, size, oa, ob)
 
     def exponential(self, scale=1.0, size=None):
         """
@@ -1271,18 +1265,18 @@ class RandomState(object):
 
         """
         try:
-            fscale = PyFloat_AsDouble(scale)
+            fscale = float(scale)
         except:
             pass
         else:
             if fscale <= 0:
                 raise ValueError("scale <= 0")
-            return cont1_array_sc(self.internal_state, rk_exponential, size, fscale)
+            return cont1_array_sc(self.internal_state, _mtrand.rk_exponential, size, fscale)
 
         oscale = np.array(scale, np.float64) # aligned?
         if np.any(np.less_equal(oscale, 0.0)):
             raise ValueError("scale <= 0")
-        return cont1_array(self.internal_state, rk_exponential, size, oscale)
+        return cont1_array(self.internal_state, _mtrand.rk_exponential, size, oscale)
 
     def standard_exponential(self, size=None):
         """
@@ -1310,7 +1304,7 @@ class RandomState(object):
         >>> n = np.random.standard_exponential((3, 8000))
 
         """
-        return cont0_array(self.internal_state, rk_standard_exponential, size)
+        return cont0_array(self.internal_state, _mtrand.rk_standard_exponential, size)
 
     def standard_gamma(self, shape, size=None):
         """
@@ -1380,17 +1374,17 @@ class RandomState(object):
 
         """
         try:
-            fshape = PyFloat_AsDouble(shape)
+            fshape = float(shape)
         except:
             pass
         else:
             if fshape <= 0:
                 raise ValueError("shape <= 0")
-            return cont1_array_sc(self.internal_state, rk_standard_gamma, size, fshape)
+            return cont1_array_sc(self.internal_state, _mtrand.rk_standard_gamma, size, fshape)
         oshape = np.array(shape, np.float64) # aligned?
         if np.any(np.less_equal(oshape, 0.0)):
             raise ValueError("shape <= 0")
-        return cont1_array(self.internal_state, rk_standard_gamma, size, oshape)
+        return cont1_array(self.internal_state, _mtrand.rk_standard_gamma, size, oshape)
 
     def gamma(self, shape, scale=1.0, size=None):
         """
@@ -1463,8 +1457,8 @@ class RandomState(object):
 
         """
         try:
-            fshape = PyFloat_AsDouble(shape)
-            fscale = PyFloat_AsDouble(scale)
+            fshape = float(shape)
+            fscale = float(scale)
         except:
             pass
         else:
@@ -1472,14 +1466,14 @@ class RandomState(object):
                 raise ValueError("shape <= 0")
             if fscale <= 0:
                 raise ValueError("scale <= 0")
-            return cont2_array_sc(self.internal_state, rk_gamma, size, fshape, fscale)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_gamma, size, fshape, fscale)
         oshape = np.array(shape, np.float64) # aligned?
         oscale = np.array(scale, np.float64) # aligned?
         if np.any(np.less_equal(oshape, 0.0)):
             raise ValueError("shape <= 0")
         if np.any(np.less_equal(oscale, 0.0)):
             raise ValueError("scale <= 0")
-        return cont2_array(self.internal_state, rk_gamma, size, oshape, oscale)
+        return cont2_array(self.internal_state, _mtrand.rk_gamma, size, oshape, oscale)
 
     def f(self, dfnum, dfden, size=None):
         """
@@ -1562,8 +1556,8 @@ class RandomState(object):
 
         """
         try:
-            fdfnum = PyFloat_AsDouble(dfnum)
-            fdfden = PyFloat_AsDouble(dfden)
+            fdfnum = float(dfnum)
+            fdfden = float(dfden)
         except:
             pass
         else:
@@ -1571,7 +1565,7 @@ class RandomState(object):
                 raise ValueError("shape <= 0")
             if fdfden <= 0:
                 raise ValueError("scale <= 0")
-            return cont2_array_sc(self.internal_state, rk_f, size, fdfnum, fdfden)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_f, size, fdfnum, fdfden)
 
         odfnum = np.array(dfnum, np.float64) # aligned?
         odfden = np.array(dfden, np.float64) # aligned?
@@ -1579,7 +1573,7 @@ class RandomState(object):
             raise ValueError("dfnum <= 0")
         if np.any(np.less_equal(odfden, 0.0)):
             raise ValueError("dfden <= 0")
-        return cont2_array(self.internal_state, rk_f, size, odfnum, odfden)
+        return cont2_array(self.internal_state, _mtrand.rk_f, size, odfnum, odfden)
 
     def noncentral_f(self, dfnum, dfden, nonc, size=None):
         """
@@ -1646,9 +1640,9 @@ class RandomState(object):
 
         """
         try:
-            fdfnum = PyFloat_AsDouble(dfnum)
-            fdfden = PyFloat_AsDouble(dfden)
-            fnonc = PyFloat_AsDouble(nonc)
+            fdfnum = float(dfnum)
+            fdfden = float(dfden)
+            fnonc = float(nonc)
         except:
             pass
         else:
@@ -1658,7 +1652,7 @@ class RandomState(object):
                 raise ValueError("dfden <= 0")
             if fnonc < 0:
                 raise ValueError("nonc < 0")
-            return cont3_array_sc(self.internal_state, rk_noncentral_f, size,
+            return cont3_array_sc(self.internal_state, _mtrand.rk_noncentral_f, size,
                                   fdfnum, fdfden, fnonc)
 
         odfnum = np.array(dfnum, np.float64) # aligned?
@@ -1671,7 +1665,7 @@ class RandomState(object):
             raise ValueError("dfden <= 0")
         if np.any(np.less(ononc, 0.0)):
             raise ValueError("nonc < 0")
-        return cont3_array(self.internal_state, rk_noncentral_f, size, odfnum,
+        return cont3_array(self.internal_state, _mtrand.rk_noncentral_f, size, odfnum,
             odfden, ononc)
 
     def chisquare(self, df, size=None):
@@ -1737,18 +1731,18 @@ class RandomState(object):
 
         """
         try:
-            fdf = PyFloat_AsDouble(df)
+            fdf = float(df)
         except:
             pass
         else:
             if fdf <= 0:
                 raise ValueError("df <= 0")
-            return cont1_array_sc(self.internal_state, rk_chisquare, size, fdf)
+            return cont1_array_sc(self.internal_state, _mtrand.rk_chisquare, size, fdf)
 
         odf = np.array(df, np.float64) # aligned?
         if np.any(np.less_equal(odf, 0.0)):
             raise ValueError("df <= 0")
-        return cont1_array(self.internal_state, rk_chisquare, size, odf)
+        return cont1_array(self.internal_state, _mtrand.rk_chisquare, size, odf)
 
     def noncentral_chisquare(self, df, nonc, size=None):
         """
@@ -1820,8 +1814,8 @@ class RandomState(object):
 
         """
         try:
-            fdf = PyFloat_AsDouble(df)
-            fnonc = PyFloat_AsDouble(nonc)
+            fdf = float(df)
+            fnonc = float(nonc)
         except:
             pass
         else:
@@ -1829,7 +1823,7 @@ class RandomState(object):
                 raise ValueError("df <= 0")
             if fnonc <= 0:
                 raise ValueError("nonc <= 0")
-            return cont2_array_sc(self.internal_state, rk_noncentral_chisquare,
+            return cont2_array_sc(self.internal_state, _mtrand.rk_noncentral_chisquare,
                                   size, fdf, fnonc)
 
         odf = np.array(df, np.float64) # aligned?
@@ -1838,7 +1832,7 @@ class RandomState(object):
             raise ValueError("df <= 1")
         if np.any(np.less_equal(ononc, 0.0)):
             raise ValueError("nonc < 0")
-        return cont2_array(self.internal_state, rk_noncentral_chisquare, size,
+        return cont2_array(self.internal_state, _mtrand.rk_noncentral_chisquare, size,
             odf, ononc)
 
     def standard_cauchy(self, size=None):
@@ -1900,7 +1894,7 @@ class RandomState(object):
         >>> plt.show()
 
         """
-        return cont0_array(self.internal_state, rk_standard_cauchy, size)
+        return cont0_array(self.internal_state, _mtrand.rk_standard_cauchy, size)
 
     def standard_t(self, df, size=None):
         """
@@ -1988,18 +1982,18 @@ class RandomState(object):
 
         """
         try:
-            fdf = PyFloat_AsDouble(df)
+            fdf = float(df)
         except:
             pass
         else:
             if fdf <= 0:
                 raise ValueError("df <= 0")
-            return cont1_array_sc(self.internal_state, rk_standard_t, size, fdf)
+            return cont1_array_sc(self.internal_state, _mtrand.rk_standard_t, size, fdf)
 
         odf = np.array(df, np.float64) # aligned?
         if np.any(np.less_equal(odf, 0.0)):
             raise ValueError("df <= 0")
-        return cont1_array(self.internal_state, rk_standard_t, size, odf)
+        return cont1_array(self.internal_state, _mtrand.rk_standard_t, size, odf)
 
     def vonmises(self, mu, kappa, size=None):
         """
@@ -2078,20 +2072,20 @@ class RandomState(object):
 
         """
         try:
-            fmu = PyFloat_AsDouble(mu)
-            fkappa = PyFloat_AsDouble(kappa)
+            fmu = float(mu)
+            fkappa = float(kappa)
         except:
             pass
         else:
             if fkappa < 0:
                 raise ValueError("kappa < 0")
-            return cont2_array_sc(self.internal_state, rk_vonmises, size, fmu, fkappa)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_vonmises, size, fmu, fkappa)
 
         omu = np.array(mu, np.float64) # aligned?
         okappa = np.array(kappa, np.float64) # aligned?
         if np.any(np.less(okappa, 0.0)):
             raise ValueError("kappa < 0")
-        return cont2_array(self.internal_state, rk_vonmises, size, omu, okappa)
+        return cont2_array(self.internal_state, _mtrand.rk_vonmises, size, omu, okappa)
 
     def pareto(self, a, size=None):
         """
@@ -2174,18 +2168,18 @@ class RandomState(object):
 
         """
         try:
-            fa = PyFloat_AsDouble(a)
+            fa = float(a)
         except:
             pass
         else:
             if fa <= 0:
                 raise ValueError("a <= 0")
-            return cont1_array_sc(self.internal_state, rk_pareto, size, fa)
+            return cont1_array_sc(self.internal_state, _mtrand.rk_pareto, size, fa)
 
         oa = np.array(a, np.float64) # aligned?
         if np.any(np.less_equal(oa, 0.0)):
             raise ValueError("a <= 0")
-        return cont1_array(self.internal_state, rk_pareto, size, oa)
+        return cont1_array(self.internal_state, _mtrand.rk_pareto, size, oa)
 
     def weibull(self, a, size=None):
         """
@@ -2272,18 +2266,18 @@ class RandomState(object):
 
         """
         try:
-            fa = PyFloat_AsDouble(a)
+            fa = float(a)
         except:
             pass
         else:
             if fa <= 0:
                 raise ValueError("a <= 0")
-            return cont1_array_sc(self.internal_state, rk_weibull, size, fa)
+            return cont1_array_sc(self.internal_state, _mtrand.rk_weibull, size, fa)
 
         oa = np.array(a, np.float64) # aligned?
         if np.any(np.less_equal(oa, 0.0)):
             raise ValueError("a <= 0")
-        return cont1_array(self.internal_state, rk_weibull, size, oa)
+        return cont1_array(self.internal_state, _mtrand.rk_weibull, size, oa)
 
     def power(self, a, size=None):
         """
@@ -2379,18 +2373,18 @@ class RandomState(object):
 
         """
         try:
-            fa = PyFloat_AsDouble(a)
+            fa = float(a)
         except:
             pass
         else:
             if fa <= 0:
                 raise ValueError("a <= 0")
-            return cont1_array_sc(self.internal_state, rk_power, size, fa)
+            return cont1_array_sc(self.internal_state, _mtrand.rk_power, size, fa)
 
         oa = np.array(a, np.float64) # aligned?
         if np.any(np.less_equal(oa, 0.0)):
             raise ValueError("a <= 0")
-        return cont1_array(self.internal_state, rk_power, size, oa)
+        return cont1_array(self.internal_state, _mtrand.rk_power, size, oa)
 
     def laplace(self, loc=0.0, scale=1.0, size=None):
         """
@@ -2466,19 +2460,19 @@ class RandomState(object):
 
         """
         try:
-            floc = PyFloat_AsDouble(loc)
-            fscale = PyFloat_AsDouble(scale)
+            floc = float(loc)
+            fscale = float(scale)
         except:
             pass
         else:
             if fscale <= 0:
                 raise ValueError("scale <= 0")
-            return cont2_array_sc(self.internal_state, rk_laplace, size, floc, fscale)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_laplace, size, floc, fscale)
         oloc = PyArray_FROM_OTF(loc, np.float64) # aligned?
         oscale = PyArray_FROM_OTF(scale, np.float64) # aligned?
         if np.any(np.less_equal(oscale, 0.0)):
             raise ValueError("scale <= 0")
-        return cont2_array(self.internal_state, rk_laplace, size, oloc, oscale)
+        return cont2_array(self.internal_state, _mtrand.rk_laplace, size, oloc, oscale)
 
     def gumbel(self, loc=0.0, scale=1.0, size=None):
         """
@@ -2595,19 +2589,19 @@ class RandomState(object):
 
         """
         try:
-            floc = PyFloat_AsDouble(loc)
-            fscale = PyFloat_AsDouble(scale)
+            floc = float(loc)
+            fscale = float(scale)
         except:
             pass
         else:
             if fscale <= 0:
                 raise ValueError("scale <= 0")
-            return cont2_array_sc(self.internal_state, rk_gumbel, size, floc, fscale)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_gumbel, size, floc, fscale)
         oloc = PyArray_FROM_OTF(loc, np.float64) # aligned?
         oscale = PyArray_FROM_OTF(scale, np.float64) # aligned?
         if np.any(np.less_equal(oscale, 0.0)):
             raise ValueError("scale <= 0")
-        return cont2_array(self.internal_state, rk_gumbel, size, oloc, oscale)
+        return cont2_array(self.internal_state, _mtrand.rk_gumbel, size, oloc, oscale)
 
     def logistic(self, loc=0.0, scale=1.0, size=None):
         """
@@ -2681,19 +2675,19 @@ class RandomState(object):
 
         """
         try:
-            floc = PyFloat_AsDouble(loc)
-            fscale = PyFloat_AsDouble(scale)
+            floc = float(loc)
+            fscale = float(scale)
         except:
             pass
         else:
             if fscale <= 0:
                 raise ValueError("scale <= 0")
-            return cont2_array_sc(self.internal_state, rk_logistic, size, floc, fscale)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_logistic, size, floc, fscale)
         oloc = PyArray_FROM_OTF(loc, np.float64) # aligned?
         oscale = PyArray_FROM_OTF(scale, np.float64) # aligned?
         if np.any(np.less_equal(oscale, 0.0)):
             raise ValueError("scale <= 0")
-        return cont2_array(self.internal_state, rk_logistic, size, oloc, oscale)
+        return cont2_array(self.internal_state, _mtrand.rk_logistic, size, oloc, oscale)
 
     def lognormal(self, mean=0.0, sigma=1.0, size=None):
         """
@@ -2798,20 +2792,20 @@ class RandomState(object):
 
         """
         try:
-            fmean = PyFloat_AsDouble(mean)
-            fsigma = PyFloat_AsDouble(sigma)
+            fmean = float(mean)
+            fsigma = float(sigma)
         except:
             pass
         else:
             if fsigma <= 0:
                 raise ValueError("sigma <= 0")
-            return cont2_array_sc(self.internal_state, rk_lognormal, size, fmean, fsigma)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_lognormal, size, fmean, fsigma)
 
         omean = PyArray_FROM_OTF(mean, np.float64) # aligned?
         osigma = PyArray_FROM_OTF(sigma, np.float64) # aligned?
         if np.any(np.less_equal(osigma, 0.0)):
             raise ValueError("sigma <= 0.0")
-        return cont2_array(self.internal_state, rk_lognormal, size, omean, osigma)
+        return cont2_array(self.internal_state, _mtrand.rk_lognormal, size, omean, osigma)
 
     def rayleigh(self, scale=1.0, size=None):
         """
@@ -2869,18 +2863,18 @@ class RandomState(object):
 
         """
         try:
-            fscale = PyFloat_AsDouble(scale)
+            fscale = float(scale)
         except:
             pass
         else:
             if fscale <= 0:
                 raise ValueError("scale <= 0")
-            return cont1_array_sc(self.internal_state, rk_rayleigh, size, fscale)
+            return cont1_array_sc(self.internal_state, _mtrand.rk_rayleigh, size, fscale)
 
         oscale = np.array(scale, np.float64) # aligned?
         if np.any(np.less_equal(oscale, 0.0)):
             raise ValueError("scale <= 0.0")
-        return cont1_array(self.internal_state, rk_rayleigh, size, oscale)
+        return cont1_array(self.internal_state, _mtrand.rk_rayleigh, size, oscale)
 
     def wald(self, mean, scale, size=None):
         """
@@ -2946,8 +2940,8 @@ class RandomState(object):
 
         """
         try:
-            fmean = PyFloat_AsDouble(mean)
-            fscale = PyFloat_AsDouble(scale)
+            fmean = float(mean)
+            fscale = float(scale)
         except:
             pass
         else:
@@ -2955,14 +2949,14 @@ class RandomState(object):
                 raise ValueError("mean <= 0")
             if fscale <= 0:
                 raise ValueError("scale <= 0")
-            return cont2_array_sc(self.internal_state, rk_wald, size, fmean, fscale)
+            return cont2_array_sc(self.internal_state, _mtrand.rk_wald, size, fmean, fscale)
         omean = PyArray_FROM_OTF(mean, np.float64) # aligned?
         oscale = PyArray_FROM_OTF(scale, np.float64) # aligned?
         if np.any(np.less_equal(omean,0.0)):
             raise ValueError("mean <= 0.0")
         elif np.any(np.less_equal(oscale,0.0)):
             raise ValueError("scale <= 0.0")
-        return cont2_array(self.internal_state, rk_wald, size, omean, oscale)
+        return cont2_array(self.internal_state, _mtrand.rk_wald, size, omean, oscale)
 
 
 
@@ -3024,9 +3018,9 @@ class RandomState(object):
 
         """
         try:
-            fleft = PyFloat_AsDouble(left)
-            fright = PyFloat_AsDouble(right)
-            fmode = PyFloat_AsDouble(mode)
+            fleft = float(left)
+            fright = float(right)
+            fmode = float(mode)
         except:
             pass
         else:
@@ -3036,7 +3030,7 @@ class RandomState(object):
                 raise ValueError("mode > right")
             if fleft == fright:
                 raise ValueError("left == right")
-            return cont3_array_sc(self.internal_state, rk_triangular, size, fleft,
+            return cont3_array_sc(self.internal_state, _mtrand.rk_triangular, size, fleft,
                                   fmode, fright)
         oleft = np.array(left, np.float64) # aligned?
         omode = np.array(mode, np.float64) # aligned?
@@ -3048,7 +3042,7 @@ class RandomState(object):
             raise ValueError("mode > right")
         if np.any(np.equal(oleft, oright)):
             raise ValueError("left == right")
-        return cont3_array(self.internal_state, rk_triangular, size, oleft,
+        return cont3_array(self.internal_state, _mtrand.rk_triangular, size, oleft,
             omode, oright)
 
     # Complicated, discrete distributions:
@@ -3134,7 +3128,7 @@ class RandomState(object):
 
         """
         try:
-            fp = PyFloat_AsDouble(p)
+            fp = float(p)
             ln = PyInt_AsLong(n)
         except:
             pass
@@ -3145,7 +3139,7 @@ class RandomState(object):
                 raise ValueError("p < 0")
             elif fp > 1:
                 raise ValueError("p > 1")
-            return discnp_array_sc(self.internal_state, rk_binomial, size, ln, fp)
+            return discnp_array_sc(self.internal_state, _mtrand.rk_binomial, size, ln, fp)
 
         on = np.array(n, NPY_LONG) # aligned?
         op = np.array(p, np.float64) # aligned?
@@ -3155,7 +3149,7 @@ class RandomState(object):
             raise ValueError("p < 0")
         if np.any(np.greater(p, 1)):
             raise ValueError("p > 1")
-        return discnp_array(self.internal_state, rk_binomial, size, on, op)
+        return discnp_array(self.internal_state, _mtrand.rk_binomial, size, on, op)
 
     def negative_binomial(self, n, p, size=None):
         """
@@ -3223,8 +3217,8 @@ class RandomState(object):
 
         """
         try:
-            fp = PyFloat_AsDouble(p)
-            fn = PyFloat_AsDouble(n)
+            fp = float(p)
+            fn = float(n)
         except:
             pass
         else:
@@ -3234,7 +3228,7 @@ class RandomState(object):
                 raise ValueError("p < 0")
             elif fp > 1:
                 raise ValueError("p > 1")
-            return discdd_array_sc(self.internal_state, rk_negative_binomial,
+            return discdd_array_sc(self.internal_state, _mtrand.rk_negative_binomial,
                                    size, fn, fp)
 
         on = np.array(n, np.float64) # aligned?
@@ -3245,7 +3239,7 @@ class RandomState(object):
             raise ValueError("p < 0")
         if np.any(np.greater(p, 1)):
             raise ValueError("p > 1")
-        return discdd_array(self.internal_state, rk_negative_binomial, size,
+        return discdd_array(self.internal_state, _mtrand.rk_negative_binomial, size,
                             on, op)
 
     def poisson(self, lam=1.0, size=None):
@@ -3301,7 +3295,7 @@ class RandomState(object):
 
         """
         try:
-            flam = PyFloat_AsDouble(lam)
+            flam = float(lam)
         except:
             pass
         else:
@@ -3309,14 +3303,14 @@ class RandomState(object):
                 raise ValueError("lam < 0")
             if lam > self.poisson_lam_max:
                 raise ValueError("lam value too large")
-            return discd_array_sc(self.internal_state, rk_poisson, size, flam)
+            return discd_array_sc(self.internal_state, _mtrand.rk_poisson, size, flam)
 
         olam = np.array(lam, np.float64) # aligned?
         if np.any(np.less(olam, 0)):
             raise ValueError("lam < 0")
         if np.any(np.greater(olam, self.poisson_lam_max)):
             raise ValueError("lam value too large.")
-        return discd_array(self.internal_state, rk_poisson, size, olam)
+        return discd_array(self.internal_state, _mtrand.rk_poisson, size, olam)
 
     def zipf(self, a, size=None):
         """
@@ -3391,18 +3385,18 @@ class RandomState(object):
 
         """
         try:
-            fa = PyFloat_AsDouble(a)
+            fa = float(a)
         except:
             pass
         else:
             if fa <= 1.0:
                 raise ValueError("a <= 1.0")
-            return discd_array_sc(self.internal_state, rk_zipf, size, fa)
+            return discd_array_sc(self.internal_state, _mtrand.rk_zipf, size, fa)
 
         oa = np.array(a, np.float64) # aligned?
         if np.any(np.less_equal(oa, 1.0)):
             raise ValueError("a <= 1.0")
-        return discd_array(self.internal_state, rk_zipf, size, oa)
+        return discd_array(self.internal_state, _mtrand.rk_zipf, size, oa)
 
     def geometric(self, p, size=None):
         """
@@ -3450,7 +3444,7 @@ class RandomState(object):
 
         """
         try:
-            fp = PyFloat_AsDouble(p)
+            fp = float(p)
         except:
             pass
         else:
@@ -3458,7 +3452,7 @@ class RandomState(object):
                 raise ValueError("p < 0.0")
             if fp > 1.0:
                 raise ValueError("p > 1.0")
-            return discd_array_sc(self.internal_state, rk_geometric, size, fp)
+            return discd_array_sc(self.internal_state, _mtrand.rk_geometric, size, fp)
 
 
         op = np.array(p, np.float64) # aligned?
@@ -3466,7 +3460,7 @@ class RandomState(object):
             raise ValueError("p < 0.0")
         if np.any(np.greater(op, 1.0)):
             raise ValueError("p > 1.0")
-        return discd_array(self.internal_state, rk_geometric, size, op)
+        return discd_array(self.internal_state, _mtrand.rk_geometric, size, op)
 
     def hypergeometric(self, ngood, nbad, nsample, size=None):
         """
@@ -3568,7 +3562,7 @@ class RandomState(object):
                 raise ValueError("nsample < 1")
             if lngood + lnbad < lnsample:
                 raise ValueError("ngood + nbad < nsample")
-            return discnmN_array_sc(self.internal_state, rk_hypergeometric, size,
+            return discnmN_array_sc(self.internal_state, _mtrand.rk_hypergeometric, size,
                                     lngood, lnbad, lnsample)
 
         ongood = np.array(ngood, NPY_LONG) # aligned?
@@ -3582,7 +3576,7 @@ class RandomState(object):
             raise ValueError("nsample < 1")
         if np.any(np.less(np.add(ongood, onbad),onsample)):
             raise ValueError("ngood + nbad < nsample")
-        return discnmN_array(self.internal_state, rk_hypergeometric, size,
+        return discnmN_array(self.internal_state, _mtrand.rk_hypergeometric, size,
             ongood, onbad, onsample)
 
     def logseries(self, p, size=None):
@@ -3660,7 +3654,7 @@ class RandomState(object):
 
         """
         try:
-            fp = PyFloat_AsDouble(p)
+            fp = float(p)
         except:
             pass
         else:
@@ -3668,14 +3662,14 @@ class RandomState(object):
                 raise ValueError("p <= 0.0")
             if fp >= 1.0:
                 raise ValueError("p >= 1.0")
-            return discd_array_sc(self.internal_state, rk_logseries, size, fp)
+            return discd_array_sc(self.internal_state, _mtrand.rk_logseries, size, fp)
 
         op = np.array(p, np.float64) # aligned?
         if np.any(np.less_equal(op, 0.0)):
             raise ValueError("p <= 0.0")
         if np.any(np.greater_equal(op, 1.0)):
             raise ValueError("p >= 1.0")
-        return discd_array(self.internal_state, rk_logseries, size, op)
+        return discd_array(self.internal_state, _mtrand.rk_logseries, size, op)
 
     # Multivariate distributions:
     def multivariate_normal(self, mean, cov, size=None):
@@ -3885,7 +3879,7 @@ class RandomState(object):
             Sum = 1.0
             dn = n
             for j in range(d-1):
-                mnix[i+j] = rk_binomial(self.internal_state, dn, pix[j]/Sum)
+                mnix[i+j] = _mtrand.rk_binomial(self.internal_state, dn, pix[j]/Sum)
                 dn = dn - mnix[i+j]
                 if dn <= 0:
                     break
@@ -4020,7 +4014,7 @@ class RandomState(object):
             # rows; we need a bounce buffer.
             buf = np.empty(x.shape[1:], dtype=x.dtype)
             while i > 0:
-                j = rk_interval(i, self.internal_state)
+                j = _mtrand.rk_interval(i, self.internal_state)
                 buf[...] = x[j]
                 x[j] = x[i]
                 x[i] = buf
@@ -4030,7 +4024,7 @@ class RandomState(object):
             # sequence types, indexing returns a real object that's
             # independent of the array contents, so we can just swap directly.
             while i > 0:
-                j = rk_interval(i, self.internal_state)
+                j = _mtrand.rk_interval(i, self.internal_state)
                 x[i], x[j] = x[j], x[i]
                 i = i - 1
 
@@ -4076,5 +4070,11 @@ class RandomState(object):
             arr = np.array(x)
         self.shuffle(arr)
         return arr
+
+_rand = RandomState()
+
+for attr in dir(_rand):
+    if not attr.startswith('_'):
+        globals()[attr] = getattr(_rand, attr)
 
 
