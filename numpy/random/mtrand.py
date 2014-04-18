@@ -348,7 +348,7 @@ def rand_array(state, func, size, dtypes, *args):
     else:
         array = np.empty(size, dtypes[0])
     multi = np.nditer([array,] + list(args), op_dtypes=dtypes,
-                op_flags=[['writeonly', 'allocate']] + [['readonly']]*len(args))
+            op_flags=[['writeonly', 'allocate']] + [['readonly']]*len(args))
     if multi.itersize != multi.operands[0].size:
         raise ValueError("size is not compatible with inputs")
     for it in multi:
@@ -375,7 +375,7 @@ def discnp_array_sc(state, func, size, n, p):
     return array_sc(state, func, size, int, n, p)
 
 def discnp_array(state, func, size, on, op):
-    return rand_array(state, func, size, [np.long, on.dtype, op.dtype], on, op)
+    return rand_array(state, func, size, [np.int64, on.dtype, op.dtype], on, op)
 
 def discdd_array_sc(state, func, size, n, p):
     return array_sc(state, func, size, int, n, p)
@@ -779,9 +779,9 @@ class RandomState(object):
         ' eh\\x85\\x022SZ\\xbf\\xa4' #random
 
         """
-        bytestring = '0' * length
+        bytestring = ffi.new('char [%d]' % length)
         _mtrand.rk_fill(bytestring, length, self.internal_state)
-        return bytestring
+        return ffi.string(bytestring)
 
 
     def choice(self, a, size=None, replace=True, p=None):
@@ -878,7 +878,7 @@ class RandomState(object):
             if pop_size is 0:
                 raise ValueError("a must be non-empty")
 
-        if None != p:
+        if None is not p:
             p = np.array(p, dtype=np.double, ndmin=1, copy=False)
             if p.ndim != 1:
                 raise ValueError("p must be 1-dimensional")
@@ -897,7 +897,7 @@ class RandomState(object):
 
         # Actual sampling
         if replace:
-            if None != p:
+            if None is not p:
                 cdf = p.cumsum()
                 cdf /= cdf[-1]
                 uniform_samples = self.random_sample(shape)
@@ -910,7 +910,7 @@ class RandomState(object):
                 raise ValueError("Cannot take a larger sample than "
                                  "population when 'replace=False'")
 
-            if None != p:
+            if None is not p:
                 if np.sum(p > 0) < size:
                     raise ValueError("Fewer non-zero entries in p than size")
                 n_uniq = 0
