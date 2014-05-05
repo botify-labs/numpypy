@@ -320,7 +320,8 @@ def check_types(config_cmd, ext, build_dir):
         # definition is binary compatible with C99 complex type (check done at
         # build time in npy_common.h)
         complex_def = "struct {%s __x; %s __y;}" % (type, type)
-        res = config_cmd.check_type_size(complex_def, expected=2*expected[type])
+        res = config_cmd.check_type_size(complex_def,
+                         expected=[2*t for t in expected[type]])
         if res >= 0:
             public_defines.append(('NPY_SIZEOF_COMPLEX_%s' % sym2def(type), '%d' % res))
         else:
