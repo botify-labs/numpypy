@@ -1,3 +1,10 @@
+Welcome to PyPy's fork of Numpy. In order to install:
+
+git clone https://bitbucket.org/pypy/numpy.git; 
+cd numpy; pypy setup.py install
+
+The original README.txt follows:
+
 NumPy is the fundamental package needed for scientific computing with Python.
 This package contains:
 
