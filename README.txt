@@ -10,6 +10,12 @@ or more cleanly::
 If you get a message about `missing Python.h` you must install the pypy-dev
 package for your system
 
+If you installed to a system directory, you may need to run::
+
+    sudo pypy -c 'import numpy'
+
+once to initialize the cffi cached shared objects as `root`
+
 ----------------------------------------
 
 The original README.txt follows:
