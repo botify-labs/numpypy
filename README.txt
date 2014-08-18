@@ -1,7 +1,16 @@
-Welcome to PyPy's fork of Numpy. In order to install:
+Welcome to PyPy's fork of Numpy. In order to install::
 
-git clone https://bitbucket.org/pypy/numpy.git; 
-cd numpy; pypy setup.py install
+   git clone https://bitbucket.org/pypy/numpy.git; 
+   cd numpy; pypy setup.py install
+
+or more cleanly::
+
+    pip install git+https://bitbucket.org/pypy/numpy.git
+
+If you get a message about `missing Python.h` you must install the pypy-dev
+package for your system
+
+----------------------------------------
 
 The original README.txt follows:
 
