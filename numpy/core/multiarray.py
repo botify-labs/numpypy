@@ -45,6 +45,7 @@ def may_share_memory(a, b):
     return True
 
 from _numpypy.multiarray import *
+from _numpypy.multiarray import _reconstruct
 
 for name in '''
 CLIP WRAP RAISE MAXDIMS ALLOW_THREADS BUFSIZE nditer nested_iters
