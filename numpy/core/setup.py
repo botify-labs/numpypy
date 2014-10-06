@@ -699,10 +699,10 @@ def configuration(parent_package='',top_path=None):
                        join('src', 'npymath', 'ieee754.c.src'),
                        join('src', 'npymath', 'npy_math_complex.c.src'),
                        join('src', 'npymath', 'halffloat.c')]
+    config.add_installed_library('npymath',
+        sources=npymath_sources + [get_mathlib_info],
+        install_dir='lib')
     if '__pypy__' not in sys.builtin_module_names:
-        config.add_installed_library('npymath',
-            sources=npymath_sources + [get_mathlib_info],
-            install_dir='lib')
         config.add_npy_pkg_config("npymath.ini.in", "lib/npy-pkg-config",
             subst_dict)
         config.add_npy_pkg_config("mlib.ini.in", "lib/npy-pkg-config",

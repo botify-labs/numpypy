@@ -118,6 +118,7 @@ static NPY_INLINE int PyInt_Check(PyObject *op) {
 #endif /* NPY_PY3K */
 
 
+#ifdef PyUnicode_Concat
 static NPY_INLINE void
 PyUnicode_ConcatAndDel(PyObject **left, PyObject *right)
 {
@@ -136,6 +137,10 @@ PyUnicode_Concat2(PyObject **left, PyObject *right)
     Py_DECREF(*left);
     *left = newobj;
 }
+#else
+//outputs in gcc as well as MSVC
+#pragma message("warning: your python does not define PyUnicode_Concat")
+#endif
 
 /*
  * PyFile_* compatibility
