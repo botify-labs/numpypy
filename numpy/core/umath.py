@@ -10,7 +10,7 @@ ERR_CALL = 3
 ERR_PRINT = 4
 ERR_LOG = 5
 
-ERR_DEFAULT2 = 521
+ERR_DEFAULT = 521
 
 UFUNC_BUFSIZE_DEFAULT = 8192
 
@@ -22,7 +22,7 @@ NAN = float('nan')
 from math import e, pi
 
 def geterrobj():
-    return [UFUNC_BUFSIZE_DEFAULT, ERR_DEFAULT2, None]
+    return [UFUNC_BUFSIZE_DEFAULT, ERR_DEFAULT, None]
 
 def seterrobj(val):
     pass
