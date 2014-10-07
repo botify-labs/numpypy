@@ -35,7 +35,9 @@ static void **PyUFunc_API=NULL;
 #endif
 #endif
 
+#ifndef PYPY_VERSION
 %s
+#endif
 
 static int
 _import_umath(void)
