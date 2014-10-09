@@ -44,6 +44,9 @@ def may_share_memory(a, b):
         return False
     return True
 
+def result_type(*args):
+    return 'float64'
+
 from _numpypy.multiarray import *
 from _numpypy.multiarray import _reconstruct
 
