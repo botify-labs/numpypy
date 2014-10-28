@@ -16,6 +16,8 @@ If you installed to a system directory, you may need to run::
 
 once to initialize the cffi cached shared objects as `root`
 
+For now, NumPyPy only works with Python 2
+
 ----------------------------------------
 
 The original README.txt follows:
