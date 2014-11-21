@@ -3194,7 +3194,7 @@ PyObject *PyInit__umath_linalg(void)
 #else
 #define RETVAL
 PyMODINIT_FUNC
-init_umath_linalg(void)
+init_umath_linalg_capi(void)
 #endif
 {
     PyObject *m;

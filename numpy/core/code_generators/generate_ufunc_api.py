@@ -36,11 +36,6 @@ static void **PyUFunc_API=NULL;
 #endif
 
 #ifdef PYPY_VERSION
-/*UFUNC_API*/
-NPY_NO_EXPORT int
-PyUFunc_getfperr(void);
-extern  PyObject * PyUFunc_FromFuncAndDataAndSignature \
-       (PyUFuncGenericFunction *, void **, char *, int, int, int, int, const char *, const char *, int, const char *);
 #else
 %s
 #endif

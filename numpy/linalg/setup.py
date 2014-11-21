@@ -45,7 +45,7 @@ def configuration(parent_package='',top_path=None):
                          extra_info = lapack_info
                          )
     # umath_linalg module
-    config.add_extension('_umath_linalg',
+    config.add_extension('_umath_linalg_capi',
                          sources = [get_lapack_lite_sources],
                          depends =  ['umath_linalg.c.src'] + lapack_lite_src,
                          extra_info = lapack_info,
