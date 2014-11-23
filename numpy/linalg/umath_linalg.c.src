@@ -399,7 +399,7 @@ set_fp_invalid_or_clear(int error_occurred)
  *****************************************************************************
  */
 
-#define UMATH_LINALG_MODULE_NAME "_umath_linalg"
+#define UMATH_LINALG_MODULE_NAME "_umath_linalg_capi"
 
 typedef union {
     fortran_complex f;
