@@ -1521,7 +1521,7 @@ def cffti(n):
     '''
     void cffti(int n, Treal wsave[])
     '''
-    wsave_cdata = ffi.new('double[]', 4*n+15) # don't even ask me why 4 and why 15. Just took them from C-ext wrapper "as is".
+    wsave_cdata = ffi.new('double[]', 4*4*n+15) # don't even ask me why 4 and why 15. Just took them from C-ext wrapper "as is".
     C.cffti(n, wsave_cdata)
     return wsave_cdata
 
