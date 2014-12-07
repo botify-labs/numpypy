@@ -45,7 +45,7 @@ _real_fft_cache = {}
 
 def _raw_fft(a, n=None, axis=-1, init_function=fft_cffi.cffti,
              work_function=fft_cffi.cfftf, fft_cache = _fft_cache ):
-    a = asarray(a).astype(complex) # how could it work without .astype(complex) ?
+    a = asarray(a)
 
     if n is None:
         n = a.shape[axis]

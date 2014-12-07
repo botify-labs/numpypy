@@ -1515,23 +1515,32 @@ C = ffi.verify('''
     #endif
 ''', libraries=[])
 
-
+import numpy as np
 
 def cffti(n):
     '''
     void cffti(int n, Treal wsave[])
     '''
-    wsave_cdata = ffi.new('double[]', 4*4*n+15) # don't even ask me why 4 and why 15. Just took them from C-ext wrapper "as is".
-    C.cffti(n, wsave_cdata)
-    return wsave_cdata
+    wsave = np.empty(4*n+15, 'double') # don't even ask me why 4 and why 15. Just took them from C-ext wrapper "as is".
+    wsave_ptr = wsave.__array_interface__['data'][0]
+    C.cffti(n, ffi.cast('double*', wsave_ptr))
+    return wsave
 
 
 def cfftf(a, wsave):
     '''
     void cfftf(int n, Troeal c[], Treal wsave[]);
     '''
-    n = ffi.cast('int', len(a))
     a_copy = a.copy()
-    a_copy_cdata = ffi.cast('double*', a_copy.__array_interface__['data'][0])
-    C.cfftf(n, a_copy_cdata, wsave)
+    npts = a.shape[-1]
+    if wsave.shape[0] != npts * 4 + 15:
+        raise ValueError("invalid work array for fft size")
+    nrepeats = a_copy.size / npts
+    n = ffi.cast('int', npts)
+    wsave_ptr = wsave.__array_interface__['data'][0]
+    for i in range(nrepeats):
+        print 'npts,i,a.shape',npts,i,a.shape,a.dtype
+        dptr = a_copy.__array_interface__['data'][0] + npts * i
+        a_copy_cdata = ffi.cast('double*', dptr)
+        C.cfftf(n, a_copy_cdata, ffi.cast('double*', wsave_ptr))
     return a_copy
