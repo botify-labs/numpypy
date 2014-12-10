@@ -29,8 +29,15 @@ def seterrobj(val):
 
 from _numpypy.umath import *
 
+def NotImplementedFunc(func):
+    def tmp(*args, **kwargs):
+        raise NotImplementedError("%s not implemented yet" % func)
+    return tmp
+
 for name in '''
-hypot remainder frompyfunc mod
+hypot remainder frompyfunc
 '''.split():
     if name not in globals():
-        globals()[name] = None
+        globals()[name] = NotImplementedFunc(name)
+    else:
+        print 'umath now implements %s, please remove from core/umath list of NotImplementedFuncs' % name

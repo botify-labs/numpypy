@@ -50,14 +50,21 @@ def result_type(*args):
 from _numpypy.multiarray import *
 from _numpypy.multiarray import _reconstruct
 
+def NotImplementedFunc(func):
+    def tmp(*args, **kwargs):
+        raise NotImplementedError("%s not implemented yet" % func)
+    return tmp
+
 for name in '''
-CLIP WRAP RAISE MAXDIMS ALLOW_THREADS BUFSIZE nditer nested_iters
-broadcast empty_like fromiter fromfile frombuffer newbuffer getbuffer
+ALLOW_THREADS BUFSIZE nested_iters
+broadcast fromiter fromfile newbuffer getbuffer
 int_asbuffer set_numeric_ops can_cast promote_types
-min_scalar_type result_type lexsort compare_chararrays putmask einsum inner
+min_scalar_type lexsort compare_chararrays putmask einsum inner
 _vec_string datetime_data
 datetime_as_string busday_offset busday_count is_busday busdaycalendar
 _flagdict flagsobj
 '''.split():
     if name not in globals():
-        globals()[name] = None
+        globals()[name] = NotImplementedFunc(name)
+    else:
+        print 'multiarray now implements %s, please remove from core/multiarray list of NotImplementedFuncs' % name
