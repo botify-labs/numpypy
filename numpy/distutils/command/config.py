@@ -265,7 +265,6 @@ int main ()
                     self._clean()
                     return size
                 except CompileError:
-                    log.info("test failure type_name %r is not size %r" % (type_name, size))
                     pass
 
         # this fails to *compile* if size > sizeof(type)

@@ -324,8 +324,7 @@ def check_types(config_cmd, ext, build_dir):
         # definition is binary compatible with C99 complex type (check done at
         # build time in npy_common.h)
         complex_def = "struct {%s __x; %s __y;}" % (type, type)
-        res = config_cmd.check_type_size(complex_def,
-                         expected=[2*t for t in expected[type]])
+        res = config_cmd.check_type_size(complex_def, expected=2*expected[type])
         if res >= 0:
             public_defines.append(('NPY_SIZEOF_COMPLEX_%s' % sym2def(type), '%d' % res))
         else:
@@ -430,11 +429,9 @@ def configuration(parent_package='',top_path=None):
             log.info('Generating %s', target)
 
             # Check sizeof
-            log.info('Check sizeof')
             moredefs, ignored = cocache.check_types(config_cmd, ext, build_dir)
 
             # Check math library and C99 math funcs availability
-            log.info('Check math library and C99 math func availability')
             mathlibs = check_mathlib(config_cmd)
             moredefs.append(('MATHLIB', ','.join(mathlibs)))
 
@@ -443,7 +440,6 @@ def configuration(parent_package='',top_path=None):
             moredefs.extend(cocache.check_complex(config_cmd, mathlibs)[0])
 
             # Signal check
-            log.info('Signal check')
             if is_npy_no_signal():
                 moredefs.append('__NPY_PRIVATE_NO_SIGNAL')
 
@@ -452,7 +448,6 @@ def configuration(parent_package='',top_path=None):
                 win32_checks(moredefs)
 
             # Inline check
-            log.info('Inline check')
             inline = config_cmd.check_inline()
 
             # Check whether we need our own wide character support
@@ -485,7 +480,6 @@ def configuration(parent_package='',top_path=None):
                 moredefs.append(('NPY_PY3K', 1))
 
             # Generate the config.h file from moredefs
-            log.info('Generate the config.h file from moredefs')
             target_f = open(target, 'w')
             for d in moredefs:
                 if isinstance(d, str):
@@ -704,12 +698,11 @@ def configuration(parent_package='',top_path=None):
                        join('src', 'npymath', 'npy_math_complex.c.src'),
                        join('src', 'npymath', 'halffloat.c')]
     config.add_installed_library('npymath',
-        sources=npymath_sources + [get_mathlib_info],
-        install_dir='lib')
-    if '__pypy__' not in sys.builtin_module_names:
-        config.add_npy_pkg_config("npymath.ini.in", "lib/npy-pkg-config",
+            sources=npymath_sources + [get_mathlib_info],
+            install_dir='lib')
+    config.add_npy_pkg_config("npymath.ini.in", "lib/npy-pkg-config",
             subst_dict)
-        config.add_npy_pkg_config("mlib.ini.in", "lib/npy-pkg-config",
+    config.add_npy_pkg_config("mlib.ini.in", "lib/npy-pkg-config",
             subst_dict)
 
     #######################################################################

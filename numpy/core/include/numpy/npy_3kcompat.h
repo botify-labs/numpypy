@@ -118,7 +118,6 @@ static NPY_INLINE int PyInt_Check(PyObject *op) {
 #endif /* NPY_PY3K */
 
 
-#ifdef PyUnicode_Concat
 static NPY_INLINE void
 PyUnicode_ConcatAndDel(PyObject **left, PyObject *right)
 {
@@ -137,10 +136,6 @@ PyUnicode_Concat2(PyObject **left, PyObject *right)
     Py_DECREF(*left);
     *left = newobj;
 }
-#else
-//outputs in gcc as well as MSVC
-#pragma message("warning: your python does not define PyUnicode_Concat")
-#endif
 
 /*
  * PyFile_* compatibility
@@ -282,24 +277,6 @@ npy_PyFile_Check(PyObject *file)
  * use npy_PyFile_DupClose2 instead
  * this function will mess ups python3 internal file object buffering
  * Close the dup-ed file handle, and seek the Python one to the current position
- */
-static NPY_INLINE int
-npy_PyFile_DupClose(PyObject *file, FILE* handle)
-{
-    PyObject *ret;
-    Py_ssize_t position;
-    position = npy_ftell(handle);
-    fclose(handle);
-
-    ret = PyObject_CallMethod(file, "seek", NPY_SSIZE_T_PYFMT "i", position, 0);
-    if (ret == NULL) {
-        return -1;
-    }
-    Py_DECREF(ret);
-    return 0;
-}
-
-
  */
 static NPY_INLINE int
 npy_PyFile_DupClose(PyObject *file, FILE* handle)

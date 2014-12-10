@@ -4951,7 +4951,6 @@ ufunc_at(PyUFuncObject *ufunc, PyObject *args)
     int buffersize;
     int errormask = 0;
     char * err_msg = NULL;
-    char * err_msg = NULL;
     NPY_BEGIN_THREADS_DEF;
 
     /* `nin`, the last arg, is unused. So we put 0. */
