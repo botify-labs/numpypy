@@ -111,7 +111,7 @@ gentype_alloc(PyTypeObject *type, Py_ssize_t nitems)
     PyObject *obj;
     const size_t size = _PyObject_VAR_SIZE(type, nitems + 1);
 
-    obj = (PyObject *)PyArray_malloc(size);
+    obj = (PyObject *)PyObject_Malloc(size);
     memset(obj, 0, size);
     if (type->tp_itemsize == 0) {
         PyObject_INIT(obj, type);
@@ -126,6 +126,18 @@ static void
 gentype_dealloc(PyObject *v)
 {
     Py_TYPE(v)->tp_free(v);
+}
+
+static void
+gentype_free(PyObject *v)
+{
+    /*
+     * have an explicit tp_free to enforce inheritance from it.
+     * PyObject_Free is also the tp_free of PyBaseObject so python does not
+     * COPYSLOT it, instead it takes the next parent PyInt which has a
+     * different allocator
+     */
+    PyObject_Free(v);
 }
 
 
@@ -246,27 +258,28 @@ static PyObject *
 gentype_multiply(PyObject *m1, PyObject *m2)
 {
     PyObject *ret = NULL;
-    long repeat;
+    npy_intp repeat;
 
     if (!PyArray_IsScalar(m1, Generic) &&
             ((Py_TYPE(m1)->tp_as_number == NULL) ||
              (Py_TYPE(m1)->tp_as_number->nb_multiply == NULL))) {
         /* Try to convert m2 to an int and try sequence repeat */
-        repeat = PyInt_AsLong(m2);
+        repeat = PyArray_PyIntAsIntp(m2);
         if (repeat == -1 && PyErr_Occurred()) {
             return NULL;
         }
-        ret = PySequence_Repeat(m1, (int) repeat);
+        /* Note that npy_intp is compatible to Py_Ssize_t */
+        ret = PySequence_Repeat(m1, repeat);
     }
     else if (!PyArray_IsScalar(m2, Generic) &&
             ((Py_TYPE(m2)->tp_as_number == NULL) ||
              (Py_TYPE(m2)->tp_as_number->nb_multiply == NULL))) {
         /* Try to convert m1 to an int and try sequence repeat */
-        repeat = PyInt_AsLong(m1);
+        repeat = PyArray_PyIntAsIntp(m1);
         if (repeat == -1 && PyErr_Occurred()) {
             return NULL;
         }
-        ret = PySequence_Repeat(m2, (int) repeat);
+        ret = PySequence_Repeat(m2, repeat);
     }
     if (ret == NULL) {
         PyErr_Clear(); /* no effect if not set */
@@ -963,6 +976,9 @@ static PyObject *
 
     dval = (double)(((Py@CHAR@LongDoubleScalarObject *)self)->obval)@POST@;
     obj = Py@KIND@_FromDouble(dval);
+    if (obj == NULL) {
+        return NULL;
+    }
     ret = Py_TYPE(obj)->tp_as_number->nb_@name@(obj);
     Py_DECREF(obj);
     return ret;
@@ -987,6 +1003,9 @@ static PyObject *
 
     dval = (double)(((Py@CHAR@LongDoubleScalarObject *)self)->obval)@POST@;
     obj = Py@KIND@_FromDouble(dval);
+    if (obj == NULL) {
+        return NULL;
+    }
     ret = Py_TYPE(obj)->tp_as_number->nb_@name@(obj);
     Py_DECREF(obj);
     return ret;
@@ -1059,11 +1078,33 @@ gentype_richcompare(PyObject *self, PyObject *other, int cmp_op)
 {
     PyObject *arr, *ret;
 
+    /*
+     * If the other object is None, False is always right. This avoids
+     * the array None comparison, at least until deprecation it is fixed.
+     * After that, this may be removed and numpy false would be returned.
+     *
+     * NOTE: np.equal(NaT, None) evaluates to TRUE! This is an
+     *       an inconsistency, which may has to be considered
+     *       when the deprecation is finished.
+     */
+    if (other == Py_None) {
+        if (cmp_op == Py_EQ) {
+            Py_RETURN_FALSE;
+        }
+        if (cmp_op == Py_NE) {
+            Py_RETURN_TRUE;
+        }
+    }
+
     arr = PyArray_FromScalar(self, NULL);
     if (arr == NULL) {
         return NULL;
     }
-    ret = Py_TYPE(arr)->tp_richcompare(arr, other, cmp_op);
+    /*
+     * Call via PyObject_RichCompare to ensure that other.__eq__
+     * has a chance to run when necessary
+     */
+    ret = PyObject_RichCompare(arr, other, cmp_op);
     Py_DECREF(arr);
     return ret;
 }
@@ -1098,6 +1139,21 @@ voidtype_dtypedescr_get(PyVoidScalarObject *self)
 {
     Py_INCREF(self->descr);
     return (PyObject *)self->descr;
+}
+
+
+static PyObject *
+inttype_numerator_get(PyObject *self)
+{
+    Py_INCREF(self);
+    return self;
+}
+
+
+static PyObject *
+inttype_denominator_get(PyObject *self)
+{
+    return PyInt_FromLong(1);
 }
 
 
@@ -1485,9 +1541,9 @@ gentype_wraparray(PyObject *NPY_UNUSED(scalar), PyObject *args)
  */
 /**begin repeat
  *
- * #name = tolist, item, tostring, astype, copy, __deepcopy__, searchsorted,
- *         view, swapaxes, conj, conjugate, nonzero, flatten, ravel, fill,
- *         transpose, newbyteorder#
+ * #name = tolist, item, tostring, tobytes, astype, copy, __deepcopy__,
+ *         searchsorted, view, swapaxes, conj, conjugate, nonzero, flatten,
+ *         ravel, fill, transpose, newbyteorder#
  */
 static PyObject *
 gentype_@name@(PyObject *self, PyObject *args)
@@ -1538,7 +1594,7 @@ gentype_byteswap(PyObject *self, PyObject *args)
 
         gentype_getreadbuf(self, 0, (void **)&data);
         descr = PyArray_DescrFromScalar(self);
-        newmem = PyArray_malloc(descr->elsize);
+        newmem = PyObject_Malloc(descr->elsize);
         if (newmem == NULL) {
             Py_DECREF(descr);
             return PyErr_NoMemory();
@@ -1547,7 +1603,7 @@ gentype_byteswap(PyObject *self, PyObject *args)
             descr->f->copyswap(newmem, data, 1, NULL);
         }
         new = PyArray_Scalar(newmem, descr, NULL);
-        PyArray_free(newmem);
+        PyObject_Free(newmem);
         Py_DECREF(descr);
         return new;
     }
@@ -1831,6 +1887,9 @@ static PyMethodDef gentype_methods[] = {
     {"itemset",
         (PyCFunction)gentype_itemset,
         METH_VARARGS, NULL},
+    {"tobytes",
+        (PyCFunction)gentype_tobytes,
+        METH_VARARGS, NULL},
     {"tofile",
         (PyCFunction)gentype_tofile,
         METH_VARARGS | METH_KEYWORDS, NULL},
@@ -2040,6 +2099,20 @@ static PyMethodDef voidtype_methods[] = {
         (PyCFunction)voidtype_setfield,
         METH_VARARGS | METH_KEYWORDS, NULL},
     {NULL, NULL, 0, NULL}
+};
+
+static PyGetSetDef inttype_getsets[] = {
+    {"numerator",
+        (getter)inttype_numerator_get,
+        (setter)0,
+        "numerator of value (the value itself)",
+        NULL},
+    {"denominator",
+        (getter)inttype_denominator_get,
+        (setter)0,
+        "denominator of value (1)",
+        NULL},
+    {NULL, NULL, NULL, NULL, NULL}
 };
 
 /**begin repeat
@@ -2433,10 +2506,13 @@ object_arrtype_dealloc(PyObject *v)
         /* We are inheriting from a Python type as well so \
            give it first dibs on conversion */ \
         sup = (PyTypeObject *)PyTuple_GET_ITEM(type->tp_bases, num); \
-        robj = sup->tp_new(type, args, kwds); \
-        if (robj != NULL) goto finish;              \
-        if (PyTuple_GET_SIZE(args)!=1) return NULL; \
-        PyErr_Clear(); \
+        /* Prevent recursion */ \
+        if (thisfunc != sup->tp_new) { \
+            robj = sup->tp_new(type, args, kwds); \
+            if (robj != NULL) goto finish;        \
+            if (PyTuple_GET_SIZE(args)!=1) return NULL; \
+            PyErr_Clear(); \
+        } \
         /* now do default conversion */ \
     }
 
@@ -2472,6 +2548,9 @@ static PyObject *
     PyObject *robj;
     PyArrayObject *arr;
     PyArray_Descr *typecode = NULL;
+#if (@work@ != 0) || (@default@ == 1)
+    void *thisfunc = (void *)@name@_arrtype_new; 
+#endif
 #if !(@default@ == 2)
     int itemsize;
     void *dest, *src;
@@ -2928,7 +3007,7 @@ long_arrtype_hash(PyObject *obj)
  * #Char = ,U#
  * #Word = ,Unsigned#
  */
-static npy_hash_t
+static NPY_INLINE npy_hash_t
 @char@longlong_arrtype_hash(PyObject *obj)
 {
     PyObject * l = PyLong_From@Word@LongLong(
@@ -3340,33 +3419,15 @@ gen_arrtype_subscript(PyObject *self, PyObject *key)
      * the data where N is the number of None's in <???>.
      */
     PyObject *res, *ret;
-    int N;
 
-    if (key == Py_Ellipsis || key == Py_None ||
-            PyTuple_Check(key)) {
-        res = PyArray_FromScalar(self, NULL);
-    }
-    else {
-        PyErr_SetString(PyExc_IndexError,
-                "invalid index to scalar variable.");
-        return NULL;
-    }
-    if (key == Py_Ellipsis) {
-        return res;
-    }
-    if (key == Py_None) {
-        ret = add_new_axes_0d((PyArrayObject *)res, 1);
-        Py_DECREF(res);
-        return ret;
-    }
-    /* Must be a Tuple */
-    N = count_new_axes_0d(key);
-    if (N < 0) {
-        Py_DECREF(res);
-        return NULL;
-    }
-    ret = add_new_axes_0d((PyArrayObject *)res, N);
+    res = PyArray_FromScalar(self, NULL);
+
+    ret = array_subscript((PyArrayObject *)res, key);
     Py_DECREF(res);
+    if (ret == NULL) {
+        PyErr_SetString(PyExc_IndexError,
+                        "invalid index to scalar variable.");
+    }
     return ret;
 }
 
@@ -3983,7 +4044,7 @@ initialize_numeric_types(void)
     PyGenericArrType_Type.tp_getset = gentype_getsets;
     PyGenericArrType_Type.tp_new = NULL;
     PyGenericArrType_Type.tp_alloc = gentype_alloc;
-    PyGenericArrType_Type.tp_free = PyArray_free;
+    PyGenericArrType_Type.tp_free = (freefunc)gentype_free;
     PyGenericArrType_Type.tp_repr = gentype_repr;
     PyGenericArrType_Type.tp_str = gentype_str;
     PyGenericArrType_Type.tp_richcompare = gentype_richcompare;
@@ -4019,6 +4080,8 @@ initialize_numeric_types(void)
     PyVoidArrType_Type.tp_getset = voidtype_getsets;
     PyVoidArrType_Type.tp_as_mapping = &voidtype_as_mapping;
     PyVoidArrType_Type.tp_as_sequence = &voidtype_as_sequence;
+
+    PyIntegerArrType_Type.tp_getset = inttype_getsets;
 
     /**begin repeat
      * #NAME= Number, Integer, SignedInteger, UnsignedInteger, Inexact,

@@ -65,8 +65,9 @@ get_forwarding_ndarray_method(const char *name)
                 "NumPy internal error: could not find function "
                 "numpy.core._methods.%s", name);
     }
-
-    Py_INCREF(callable);
+    else {
+        Py_INCREF(callable);
+    }
     Py_DECREF(module_methods);
     return callable;
 }
@@ -351,9 +352,9 @@ array_swapaxes(PyArrayObject *self, PyObject *args)
 }
 
 
-/* steals typed reference */
 /*NUMPY_API
   Get a subset of bytes from each element of the array
+  steals reference to typed, must not be NULL
 */
 NPY_NO_EXPORT PyObject *
 PyArray_GetField(PyArrayObject *self, PyArray_Descr *typed, int offset)
@@ -409,6 +410,7 @@ array_getfield(PyArrayObject *self, PyObject *args, PyObject *kwds)
 
 /*NUMPY_API
   Set a subset of bytes from each element of the array
+  steals reference to dtype, must not be NULL
 */
 NPY_NO_EXPORT int
 PyArray_SetField(PyArrayObject *self, PyArray_Descr *dtype,
@@ -542,7 +544,7 @@ array_tolist(PyArrayObject *self, PyObject *args)
 
 
 static PyObject *
-array_tostring(PyArrayObject *self, PyObject *args, PyObject *kwds)
+array_tobytes(PyArrayObject *self, PyObject *args, PyObject *kwds)
 {
     NPY_ORDER order = NPY_CORDER;
     static char *kwlist[] = {"order", NULL};
@@ -647,7 +649,7 @@ array_toscalar(PyArrayObject *self, PyObject *args)
             return NULL;
         }
 
-        if (check_and_adjust_index(&value, size, -1) < 0) {
+        if (check_and_adjust_index(&value, size, -1, NULL) < 0) {
             return NULL;
         }
 
@@ -724,7 +726,7 @@ array_setscalar(PyArrayObject *self, PyObject *args)
             return NULL;
         }
 
-        if (check_and_adjust_index(&value, size, -1) < 0) {
+        if (check_and_adjust_index(&value, size, -1, NULL) < 0) {
             return NULL;
         }
 
@@ -1457,7 +1459,7 @@ array_deepcopy(PyArrayObject *self, PyObject *args)
         Py_DECREF(deepcopy);
         Py_DECREF(it);
     }
-    return PyArray_Return(ret);
+    return (PyObject*)ret;
 }
 
 /* Convert Array to flat list (using getitem) */
@@ -1668,6 +1670,13 @@ array_setstate(PyArrayObject *self, PyObject *args)
             tmp = PyUnicode_AsLatin1String(rawdata);
             Py_DECREF(rawdata);
             rawdata = tmp;
+            if (tmp == NULL) {
+                /* More informative error message */
+                PyErr_SetString(PyExc_ValueError,
+                                ("Failed to encode latin1 string when unpickling a Numpy array. "
+                                 "pickle.load(a, encoding='latin1') is assumed."));
+                return NULL;
+            }
         }
 #endif
 
@@ -1678,7 +1687,7 @@ array_setstate(PyArrayObject *self, PyObject *args)
             return NULL;
         }
 
-        if (PyBytes_AsStringAndSize(rawdata, &datastr, &len)) {
+        if (PyBytes_AsStringAndSize(rawdata, &datastr, &len) == -1) {
             Py_DECREF(rawdata);
             return NULL;
         }
@@ -1693,9 +1702,7 @@ array_setstate(PyArrayObject *self, PyObject *args)
     }
 
     if ((PyArray_FLAGS(self) & NPY_ARRAY_OWNDATA)) {
-        if (PyArray_DATA(self) != NULL) {
-            PyDataMem_FREE(PyArray_DATA(self));
-        }
+        PyDataMem_FREE(PyArray_DATA(self));
         PyArray_CLEARFLAGS(self, NPY_ARRAY_OWNDATA);
     }
     Py_XDECREF(PyArray_BASE(self));
@@ -1785,9 +1792,7 @@ array_setstate(PyArrayObject *self, PyObject *args)
         if (PyArray_DATA(self) == NULL) {
             fa->nd = 0;
             fa->data = PyDataMem_NEW(PyArray_DESCR(self)->elsize);
-            if (PyArray_DIMS(self)) {
-                PyDimMem_FREE(PyArray_DIMS(self));
-            }
+            PyDimMem_FREE(PyArray_DIMS(self));
             return PyErr_NoMemory();
         }
         if (PyDataType_FLAGCHK(PyArray_DESCR(self), NPY_NEEDS_INIT)) {
@@ -1827,6 +1832,7 @@ PyArray_Dump(PyObject *self, PyObject *file, int protocol)
     if (PyBytes_Check(file) || PyUnicode_Check(file)) {
         file = npy_PyFile_OpenFile(file, "wb");
         if (file == NULL) {
+            Py_DECREF(cpick);
             return -1;
         }
     }
@@ -2463,6 +2469,9 @@ NPY_NO_EXPORT PyMethodDef array_methods[] = {
     {"take",
         (PyCFunction)array_take,
         METH_VARARGS | METH_KEYWORDS, NULL},
+    {"tobytes",
+        (PyCFunction)array_tobytes,
+        METH_VARARGS | METH_KEYWORDS, NULL},
     {"tofile",
         (PyCFunction)array_tofile,
         METH_VARARGS | METH_KEYWORDS, NULL},
@@ -2470,7 +2479,7 @@ NPY_NO_EXPORT PyMethodDef array_methods[] = {
         (PyCFunction)array_tolist,
         METH_VARARGS, NULL},
     {"tostring",
-        (PyCFunction)array_tostring,
+        (PyCFunction)array_tobytes,
         METH_VARARGS | METH_KEYWORDS, NULL},
     {"trace",
         (PyCFunction)array_trace,

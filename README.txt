@@ -1,3 +1,27 @@
+Welcome to PyPy's fork of Numpy. In order to install::
+
+   git clone https://bitbucket.org/pypy/numpy.git; 
+   cd numpy; pypy setup.py install
+
+or more cleanly::
+
+    pip install git+https://bitbucket.org/pypy/numpy.git
+
+If you get a message about `missing Python.h` you must install the pypy-dev
+package for your system
+
+If you installed to a system directory, you may need to run::
+
+    sudo pypy -c 'import numpy'
+
+once to initialize the cffi cached shared objects as `root`
+
+For now, NumPyPy only works with Python 2
+
+----------------------------------------
+
+The original README.txt follows:
+
 NumPy is the fundamental package needed for scientific computing with Python.
 This package contains:
 

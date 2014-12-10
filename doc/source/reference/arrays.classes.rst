@@ -1,3 +1,5 @@
+.. _arrays.classes:
+
 #########################
 Standard array subclasses
 #########################
@@ -35,10 +37,9 @@ Special attributes and methods
 
 .. seealso:: :ref:`Subclassing ndarray <basics.subclassing>`
 
-Numpy provides several hooks that subclasses of :class:`ndarray` can
-customize:
+Numpy provides several hooks that classes can customize:
 
-.. function:: __array_finalize__(self)
+.. function:: class.__array_finalize__(self)
 
    This method is called whenever the system internally allocates a
    new array from *obj*, where *obj* is a subclass (subtype) of the
@@ -47,7 +48,7 @@ customize:
    to update meta-information from the "parent." Subclasses inherit
    a default implementation of this method that does nothing.
 
-.. function:: __array_prepare__(array, context=None)
+.. function:: class.__array_prepare__(array, context=None)
 
    At the beginning of every :ref:`ufunc <ufuncs.output-type>`, this
    method is called on the input object with the highest array
@@ -59,7 +60,7 @@ customize:
    the subclass and update metadata before returning the array to the
    ufunc for computation.
 
-.. function:: __array_wrap__(array, context=None)
+.. function:: class.__array_wrap__(array, context=None)
 
    At the end of every :ref:`ufunc <ufuncs.output-type>`, this method
    is called on the input object with the highest array priority, or
@@ -71,18 +72,21 @@ customize:
    into an instance of the subclass and update metadata before
    returning the array to the user.
 
-.. data:: __array_priority__
+.. data:: class.__array_priority__
 
    The value of this attribute is used to determine what type of
    object to return in situations where there is more than one
    possibility for the Python type of the returned object. Subclasses
    inherit a default value of 1.0 for this attribute.
 
-.. function:: __array__([dtype])
+.. function:: class.__array__([dtype])
 
-   If a class having the :obj:`__array__` method is used as the output
-   object of an :ref:`ufunc <ufuncs.output-type>`, results will be
-   written to the object returned by :obj:`__array__`.
+   If a class (ndarray subclass or not) having the :func:`__array__`
+   method is used as the output object of an :ref:`ufunc
+   <ufuncs.output-type>`, results will be written to the object
+   returned by :func:`__array__`. Similar conversion is done on 
+   input arrays.
+
 
 Matrix objects
 ==============

@@ -65,6 +65,8 @@ Inspecting the array
    ma.nonzero
    ma.shape
    ma.size
+   ma.is_masked
+   ma.is_mask
 
    ma.MaskedArray.data
    ma.MaskedArray.mask
@@ -141,6 +143,7 @@ Joining arrays
 
    ma.column_stack
    ma.concatenate
+   ma.append
    ma.dstack
    ma.hstack
    ma.vstack
@@ -251,7 +254,7 @@ Conversion operations
    ma.MaskedArray.tofile
    ma.MaskedArray.tolist
    ma.MaskedArray.torecords
-   ma.MaskedArray.tostring
+   ma.MaskedArray.tobytes
 
 
 Pickling and unpickling

@@ -27,6 +27,7 @@
 
 #include "numpy/arrayobject.h"
 #include "numpy/ufuncobject.h"
+#include "numpy/npy_3kcompat.h"
 #include "abstract.h"
 
 #include "numpy/npy_math.h"
@@ -53,16 +54,15 @@ object_ufunc_type_resolver(PyUFuncObject *ufunc,
                                 PyArray_Descr **out_dtypes)
 {
     int i, nop = ufunc->nin + ufunc->nout;
-    PyArray_Descr *obj_dtype;
 
-    obj_dtype = PyArray_DescrFromType(NPY_OBJECT);
-    if (obj_dtype == NULL) {
+    out_dtypes[0] = PyArray_DescrFromType(NPY_OBJECT);
+    if (out_dtypes[0] == NULL) {
         return -1;
     }
 
-    for (i = 0; i < nop; ++i) {
-        Py_INCREF(obj_dtype);
-        out_dtypes[i] = obj_dtype;
+    for (i = 1; i < nop; ++i) {
+        Py_INCREF(out_dtypes[0]);
+        out_dtypes[i] = out_dtypes[0];
     }
 
     return 0;
@@ -214,9 +214,6 @@ static PyUFuncGenericFunction frexp_functions[] = {
 #endif
 };
 
-static void * blank3_data[] = { (void *)NULL, (void *)NULL, (void *)NULL};
-static void * blank6_data[] = { (void *)NULL, (void *)NULL, (void *)NULL,
-                                (void *)NULL, (void *)NULL, (void *)NULL};
 static char frexp_signatures[] = {
 #ifdef HAVE_FREXPF
     NPY_HALF, NPY_HALF, NPY_INT,
@@ -227,6 +224,7 @@ static char frexp_signatures[] = {
     ,NPY_LONGDOUBLE, NPY_LONGDOUBLE, NPY_INT
 #endif
 };
+static void * blank_data[12];
 
 #if NPY_SIZEOF_LONG == NPY_SIZEOF_INT
 #define LDEXP_LONG(typ) typ##_ldexp
@@ -357,14 +355,16 @@ InitOtherOperators(PyObject *dictionary) {
     int num;
 
     num = sizeof(frexp_functions) / sizeof(frexp_functions[0]);
-    f = PyUFunc_FromFuncAndData(frexp_functions, blank3_data,
+    assert(sizeof(blank_data) / sizeof(blank_data[0]) >= num);
+    f = PyUFunc_FromFuncAndData(frexp_functions, blank_data,
                                 frexp_signatures, num,
                                 1, 2, PyUFunc_None, "frexp", frdoc, 0);
     PyDict_SetItemString(dictionary, "frexp", f);
     Py_DECREF(f);
 
     num = sizeof(ldexp_functions) / sizeof(ldexp_functions[0]);
-    f = PyUFunc_FromFuncAndData(ldexp_functions, blank6_data,
+    assert(sizeof(blank_data) / sizeof(blank_data[0]) >= num);
+    f = PyUFunc_FromFuncAndData(ldexp_functions, blank_data,
                                 ldexp_signatures, num,
                                 2, 1, PyUFunc_None, "ldexp", lddoc, 0);
     PyDict_SetItemString(dictionary, "ldexp", f);
@@ -375,6 +375,30 @@ InitOtherOperators(PyObject *dictionary) {
     PyDict_SetItemString(dictionary, "divide", f);
 #endif
     return;
+}
+
+NPY_VISIBILITY_HIDDEN PyObject * npy_um_str_out = NULL;
+NPY_VISIBILITY_HIDDEN PyObject * npy_um_str_subok = NULL;
+NPY_VISIBILITY_HIDDEN PyObject * npy_um_str_array_prepare = NULL;
+NPY_VISIBILITY_HIDDEN PyObject * npy_um_str_array_wrap = NULL;
+NPY_VISIBILITY_HIDDEN PyObject * npy_um_str_array_finalize = NULL;
+NPY_VISIBILITY_HIDDEN PyObject * npy_um_str_ufunc = NULL;
+NPY_VISIBILITY_HIDDEN PyObject * npy_um_str_pyvals_name = NULL;
+
+/* intern some strings used in ufuncs */
+static int
+intern_strings(void)
+{
+    npy_um_str_out = PyUString_InternFromString("out");
+    npy_um_str_subok = PyUString_InternFromString("subok");
+    npy_um_str_array_prepare = PyUString_InternFromString("__array_prepare__");
+    npy_um_str_array_wrap = PyUString_InternFromString("__array_wrap__");
+    npy_um_str_array_finalize = PyUString_InternFromString("__array_finalize__");
+    npy_um_str_ufunc = PyUString_InternFromString("__numpy_ufunc__");
+    npy_um_str_pyvals_name = PyUString_InternFromString(UFUNC_PYVALS_NAME);
+
+    return npy_um_str_out && npy_um_str_subok && npy_um_str_array_prepare &&
+        npy_um_str_array_wrap && npy_um_str_array_finalize && npy_um_str_ufunc;
 }
 
 /* Setup the umath module */
@@ -487,7 +511,6 @@ PyMODINIT_FUNC initumath(void)
     ADDCONST(ERR_PRINT);
     ADDCONST(ERR_LOG);
     ADDCONST(ERR_DEFAULT);
-    ADDCONST(ERR_DEFAULT2);
 
     ADDCONST(SHIFT_DIVIDEBYZERO);
     ADDCONST(SHIFT_OVERFLOW);
@@ -521,6 +544,10 @@ PyMODINIT_FUNC initumath(void)
 
     PyDict_SetItemString(d, "conj", s);
     PyDict_SetItemString(d, "mod", s2);
+
+    if (!intern_strings()) {
+        goto err;
+    }
 
     return RETVAL;
 

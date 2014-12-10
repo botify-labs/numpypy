@@ -249,8 +249,14 @@ necessary to tell f2py that the value of n depends on the input a (so
 that it won't try to create the variable n until the variable a is
 created).
 
+After modifying ``add.pyf``, the new python module file can be generated
+by compiling both ``add.f95`` and ``add.pyf``::
+
+    f2py -c add.pyf add.f95 
+
 The new interface has docstring:
 
+    >>> import add
     >>> print add.zadd.__doc__
     zadd - Function signature:
       c = zadd(a,b)
@@ -1385,7 +1391,7 @@ Simplified Wrapper and Interface Generator (SWIG) is an old and fairly
 stable method for wrapping C/C++-libraries to a large variety of other
 languages. It does not specifically understand NumPy arrays but can be
 made useable with NumPy through the use of typemaps. There are some
-sample typemaps in the numpy/doc/swig directory under numpy.i along
+sample typemaps in the numpy/tools/swig directory under numpy.i together
 with an example module that makes use of them. SWIG excels at wrapping
 large C/C++ libraries because it can (almost) parse their headers and
 auto-produce an interface. Technically, you need to generate a ``.i``

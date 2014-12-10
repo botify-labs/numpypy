@@ -168,8 +168,10 @@ npy_PyFile_Dup2(PyObject *file, char *mode, npy_off_t *orig_pos)
         return NULL;
     }
 
-    /* The handle needs to be dup'd because we have to call fclose
-       at the end */
+    /*
+     * The handle needs to be dup'd because we have to call fclose
+     * at the end
+     */
     os = PyImport_ImportModule("os");
     if (os == NULL) {
         return NULL;
@@ -236,8 +238,10 @@ npy_PyFile_DupClose2(PyObject *file, FILE* handle, npy_off_t orig_pos)
     /* Close the FILE* handle */
     fclose(handle);
 
-    /* Restore original file handle position, in order to not confuse
-       Python-side data structures */
+    /*
+     * Restore original file handle position, in order to not confuse
+     * Python-side data structures
+     */
     fd = PyObject_AsFileDescriptor(file);
     if (fd == -1) {
         return -1;
@@ -275,24 +279,6 @@ npy_PyFile_Check(PyObject *file)
 
 /*
  * DEPRECATED DO NOT USE
- * use npy_PyFile_Dup2 instead
- * this function will mess ups python3 internal file object buffering
- * Get a FILE* handle to the file represented by the Python object
- */
-static NPY_INLINE FILE*
-npy_PyFile_Dup(PyObject *file, char *mode)
-{
-    npy_off_t orig;
-    if (DEPRECATE("npy_PyFile_Dup is deprecated, use "
-                  "npy_PyFile_Dup2") < 0) {
-        return NULL;
-    }
-
-    return npy_PyFile_Dup2(file, mode, &orig);
-}
-
-/*
- * DEPRECATED DO NOT USE
  * use npy_PyFile_DupClose2 instead
  * this function will mess ups python3 internal file object buffering
  * Close the dup-ed file handle, and seek the Python one to the current position
@@ -314,17 +300,65 @@ npy_PyFile_DupClose(PyObject *file, FILE* handle)
 }
 
 
+ */
+static NPY_INLINE int
+npy_PyFile_DupClose(PyObject *file, FILE* handle)
+{
+    PyObject *ret;
+    Py_ssize_t position;
+    position = npy_ftell(handle);
+    fclose(handle);
+
+    ret = PyObject_CallMethod(file, "seek", NPY_SSIZE_T_PYFMT "i", position, 0);
+    if (ret == NULL) {
+        return -1;
+    }
+    Py_DECREF(ret);
+    return 0;
+}
+
+
 #else
 
-/* DEPRECATED DO NOT USE */
-#define npy_PyFile_Dup(file, mode) PyFile_AsFile(file)
-#define npy_PyFile_DupClose(file, handle) (0)
+/* DEPRECATED, DO NOT USE */
+#define npy_PyFile_DupClose(f, h) npy_PyFile_DupClose2((f), (h), 0)
+
 /* use these */
-#define npy_PyFile_Dup2(file, mode, orig_pos_p) PyFile_AsFile(file)
-#define npy_PyFile_DupClose2(file, handle, orig_pos) (0)
+static NPY_INLINE FILE *
+npy_PyFile_Dup2(PyObject *file,
+                const char *NPY_UNUSED(mode), npy_off_t *NPY_UNUSED(orig_pos))
+{
+    return PyFile_AsFile(file);
+}
+
+static NPY_INLINE int
+npy_PyFile_DupClose2(PyObject *NPY_UNUSED(file), FILE* NPY_UNUSED(handle),
+                     npy_off_t NPY_UNUSED(orig_pos))
+{
+    return 0;
+}
+
 #define npy_PyFile_Check PyFile_Check
 
 #endif
+
+/*
+ * DEPRECATED, DO NOT USE
+ * Use npy_PyFile_Dup2 instead.
+ * This function will mess up python3 internal file object buffering.
+ * Get a FILE* handle to the file represented by the Python object.
+ */
+static NPY_INLINE FILE*
+npy_PyFile_Dup(PyObject *file, char *mode)
+{
+    npy_off_t orig;
+    if (DEPRECATE("npy_PyFile_Dup is deprecated, use "
+                  "npy_PyFile_Dup2") < 0) {
+        return NULL;
+    }
+
+    return npy_PyFile_Dup2(file, mode, &orig);
+}
 
 static NPY_INLINE PyObject*
 npy_PyFile_OpenFile(PyObject *filename, const char *mode)
@@ -440,12 +474,6 @@ NpyCapsule_Check(PyObject *ptr)
     return PyCapsule_CheckExact(ptr);
 }
 
-static NPY_INLINE void
-simple_capsule_dtor(PyObject *cap)
-{
-    PyArray_free(PyCapsule_GetPointer(cap, NULL));
-}
-
 #else
 
 static NPY_INLINE PyObject *
@@ -477,12 +505,6 @@ static NPY_INLINE int
 NpyCapsule_Check(PyObject *ptr)
 {
     return PyCObject_Check(ptr);
-}
-
-static NPY_INLINE void
-simple_capsule_dtor(void *ptr)
-{
-    PyArray_free(ptr);
 }
 
 #endif

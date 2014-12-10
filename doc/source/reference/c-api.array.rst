@@ -190,7 +190,7 @@ From scratch
 
 .. cfunction:: PyObject* PyArray_NewFromDescr(PyTypeObject* subtype, PyArray_Descr* descr, int nd, npy_intp* dims, npy_intp* strides, void* data, int flags, PyObject* obj)
 
-    This function steals a reference to *descr* if it is not NULL.
+    This function steals a reference to *descr*.
 
     This is the main array creation function. Most new arrays are
     created with this flexible function.
@@ -1036,7 +1036,10 @@ Converting data types
     the casting rule *casting*. For simple types with :cdata:`NPY_SAFE_CASTING`,
     this is basically a wrapper around :cfunc:`PyArray_CanCastSafely`, but
     for flexible types such as strings or unicode, it produces results
-    taking into account their sizes.
+    taking into account their sizes. Integer and float types can only be cast
+    to a string or unicode type using :cdata:`NPY_SAFE_CASTING` if the string
+    or unicode type is big enough to hold the max value of the integer/float
+    type being cast from.
 
 .. cfunction:: int PyArray_CanCastArrayTo(PyArrayObject* arr, PyArray_Descr* totype, NPY_CASTING casting)
 
@@ -1073,7 +1076,8 @@ Converting data types
 
     Finds the data type of smallest size and kind to which *type1* and
     *type2* may be safely converted. This function is symmetric and
-    associative.
+    associative. A string or unicode result will be the proper size for
+    storing the max value of the input types converted to a string or unicode.
 
 .. cfunction:: PyArray_Descr* PyArray_ResultType(npy_intp narrs, PyArrayObject**arrs, npy_intp ndtypes, PyArray_Descr**dtypes)
 
@@ -1574,7 +1578,7 @@ Conversion
 
 .. cfunction:: PyObject* PyArray_ToString(PyArrayObject* self, NPY_ORDER order)
 
-    Equivalent to :meth:`ndarray.tostring` (*self*, *order*). Return the bytes
+    Equivalent to :meth:`ndarray.tobytes` (*self*, *order*). Return the bytes
     of this array in a Python string.
 
 .. cfunction:: PyObject* PyArray_ToFile(PyArrayObject* self, FILE* fp, char* sep, char* format)
@@ -1628,11 +1632,11 @@ Conversion
 Shape Manipulation
 ^^^^^^^^^^^^^^^^^^
 
-.. cfunction:: PyObject* PyArray_Newshape(PyArrayObject* self, PyArray_Dims* newshape)
+.. cfunction:: PyObject* PyArray_Newshape(PyArrayObject* self, PyArray_Dims* newshape, NPY_ORDER order)
 
     Result will be a new array (pointing to the same memory location
-    as *self* if possible), but having a shape given by *newshape*
-    . If the new shape is not compatible with the strides of *self*,
+    as *self* if possible), but having a shape given by *newshape*.
+    If the new shape is not compatible with the strides of *self*,
     then a copy of the array with the new specified shape will be
     returned.
 
@@ -1641,6 +1645,7 @@ Shape Manipulation
     Equivalent to :meth:`ndarray.reshape` (*self*, *shape*) where *shape* is a
     sequence. Converts *shape* to a :ctype:`PyArray_Dims` structure and
     calls :cfunc:`PyArray_Newshape` internally.
+    For back-ward compatability -- Not recommended
 
 .. cfunction:: PyObject* PyArray_Squeeze(PyArrayObject* self)
 
@@ -1867,15 +1872,27 @@ Calculation
     effect that is obtained by passing in *axis* = :const:`None` in Python
     (treating the array as a 1-d array).
 
-.. cfunction:: PyObject* PyArray_ArgMax(PyArrayObject* self, int axis)
+.. cfunction:: PyObject* PyArray_ArgMax(PyArrayObject* self, int axis, PyArrayObject* out)
 
     Equivalent to :meth:`ndarray.argmax` (*self*, *axis*). Return the index of
     the largest element of *self* along *axis*.
 
-.. cfunction:: PyObject* PyArray_ArgMin(PyArrayObject* self, int axis)
+.. cfunction:: PyObject* PyArray_ArgMin(PyArrayObject* self, int axis, PyArrayObject* out)
 
     Equivalent to :meth:`ndarray.argmin` (*self*, *axis*). Return the index of
     the smallest element of *self* along *axis*.
+
+
+
+
+.. note::
+
+    The out argument specifies where to place the result. If out is 
+    NULL, then the output array is created, otherwise the output is 
+    placed in out which must be the correct size and type. A new 
+    reference to the ouput array is always returned even when out 
+    is not NULL. The caller of the routine has the responsability
+    to ``DECREF`` out if not NULL or a memory-leak will occur.
 
 .. cfunction:: PyObject* PyArray_Max(PyArrayObject* self, int axis, PyArrayObject* out)
 
@@ -2583,7 +2600,7 @@ Data-type descriptors
     unless otherwise noted. Therefore, you must own a reference to any
     data-type object used as input to such a function.
 
-.. cfunction:: int PyArrayDescr_Check(PyObject* obj)
+.. cfunction:: int PyArray_DescrCheck(PyObject* obj)
 
     Evaluates as true if *obj* is a data-type object ( :ctype:`PyArray_Descr *` ).
 
@@ -2883,9 +2900,13 @@ the C-API is needed then some additional steps must be taken.
 
     .. code-block:: c
 
-        #define PY_ARRAY_UNIQUE_SYMBOL cool_ARRAY_API
         #define NO_IMPORT_ARRAY
+        #define PY_ARRAY_UNIQUE_SYMBOL cool_ARRAY_API
         #include numpy/arrayobject.h
+
+    You can also put the common two last lines into an extension-local
+    header file as long as you make sure that NO_IMPORT_ARRAY is
+    #defined before #including that file.
 
 Checking the API Version
 ^^^^^^^^^^^^^^^^^^^^^^^^

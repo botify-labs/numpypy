@@ -52,9 +52,7 @@ PyArray_GetAttrString_SuppressException(PyObject *obj, char *name)
     PyObject *res = (PyObject *)NULL;
 
     /* We do not need to check for special attributes on trivial types */
-    if (obj == Py_None ||
-            PyList_CheckExact(obj) ||
-            PyTuple_CheckExact(obj)) {
+    if (_is_basic_python_type(obj)) {
         return NULL;
     }
 
@@ -207,6 +205,10 @@ PyArray_DTypeFromObjectHelper(PyObject *obj, int maxdims,
     PyArray_Descr *dtype = NULL;
     PyObject *ip;
     Py_buffer buffer_view;
+    /* types for sequence handling */
+    PyObject ** objects;
+    PyObject * seq;
+    PyTypeObject * common_type;
 
     /* Check if it's an ndarray */
     if (PyArray_Check(obj)) {
@@ -516,30 +518,56 @@ PyArray_DTypeFromObjectHelper(PyObject *obj, int maxdims,
         return 0;
     }
 
-    /* Recursive case */
+    /*
+     * fails if convertable to list but no len is defined which some libraries
+     * require to get object arrays
+     */
     size = PySequence_Size(obj);
     if (size < 0) {
         goto fail;
     }
+
+    /* Recursive case, first check the sequence contains only one type */
+    seq = PySequence_Fast(obj, "Could not convert object to sequence");
+    if (seq == NULL) {
+        goto fail;
+    }
+    objects = PySequence_Fast_ITEMS(seq);
+    common_type = size > 0 ? Py_TYPE(objects[0]) : NULL;
+    for (i = 1; i < size; ++i) {
+        if (Py_TYPE(objects[i]) != common_type) {
+            common_type = NULL;
+            break;
+        }
+    }
+
+    /* all types are the same and scalar, one recursive call is enough */
+    if (common_type != NULL && !string_type &&
+            (common_type == &PyFloat_Type ||
+/* TODO: we could add longs if we add a range check */
+#if !defined(NPY_PY3K)
+             common_type == &PyInt_Type ||
+#endif
+             common_type == &PyBool_Type ||
+             common_type == &PyComplex_Type)) {
+        size = 1;
+    }
+
     /* Recursive call for each sequence item */
     for (i = 0; i < size; ++i) {
-        int res;
-        ip = PySequence_GetItem(obj, i);
-        if (ip == NULL) {
-            goto fail;
-        }
-        res = PyArray_DTypeFromObjectHelper(ip, maxdims - 1,
-                                            out_dtype, string_type);
+        int res = PyArray_DTypeFromObjectHelper(objects[i], maxdims - 1,
+                                                out_dtype, string_type);
         if (res < 0) {
-            Py_DECREF(ip);
+            Py_DECREF(seq);
             goto fail;
         }
         else if (res > 0) {
-            Py_DECREF(ip);
+            Py_DECREF(seq);
             return res;
         }
-        Py_DECREF(ip);
     }
+
+    Py_DECREF(seq);
 
     return 0;
 
@@ -609,31 +637,6 @@ _array_typedescr_fromstr(char *c_str)
     return descr;
 }
 
-NPY_NO_EXPORT int
-check_and_adjust_index(npy_intp *index, npy_intp max_item, int axis)
-{
-    /* Check that index is valid, taking into account negative indices */
-    if ((*index < -max_item) || (*index >= max_item)) {
-        /* Try to be as clear as possible about what went wrong. */
-        if (axis >= 0) {
-            PyErr_Format(PyExc_IndexError,
-                         "index %"NPY_INTP_FMT" is out of bounds "
-                         "for axis %d with size %"NPY_INTP_FMT,
-                         *index, axis, max_item);
-        } else {
-            PyErr_Format(PyExc_IndexError,
-                         "index %"NPY_INTP_FMT" is out of bounds "
-                         "for size %"NPY_INTP_FMT,
-                         *index, max_item);
-        }
-        return -1;
-    }
-    /* adjust negative indices */
-    if (*index < 0) {
-        *index += max_item;
-    }
-    return 0;
-}
 
 NPY_NO_EXPORT char *
 index2ptr(PyArrayObject *mp, npy_intp i)
@@ -645,7 +648,7 @@ index2ptr(PyArrayObject *mp, npy_intp i)
         return NULL;
     }
     dim0 = PyArray_DIMS(mp)[0];
-    if (check_and_adjust_index(&i, dim0, 0) < 0)
+    if (check_and_adjust_index(&i, dim0, 0, NULL) < 0)
         return NULL;
     if (i == 0) {
         return PyArray_DATA(mp);
@@ -675,37 +678,36 @@ _zerofill(PyArrayObject *ret)
 NPY_NO_EXPORT int
 _IsAligned(PyArrayObject *ap)
 {
-    unsigned int i, aligned = 1;
-    const unsigned int alignment = PyArray_DESCR(ap)->alignment;
+    unsigned int i;
+    npy_uintp aligned;
+    npy_uintp alignment = PyArray_DESCR(ap)->alignment;
 
-    /* The special casing for STRING and VOID types was removed
-     * in accordance with http://projects.scipy.org/numpy/ticket/1227
-     * It used to be that IsAligned always returned True for these
-     * types, which is indeed the case when they are created using
-     * PyArray_DescrConverter(), but not necessarily when using
-     * PyArray_DescrAlignConverter(). */
+    /* alignment 1 types should have a efficient alignment for copy loops */
+    if (PyArray_ISFLEXIBLE(ap) || PyArray_ISSTRING(ap)) {
+        alignment = NPY_MAX_COPY_ALIGNMENT;
+    }
 
     if (alignment == 1) {
         return 1;
     }
-    aligned = npy_is_aligned(PyArray_DATA(ap), alignment);
+    aligned = (npy_uintp)PyArray_DATA(ap);
 
     for (i = 0; i < PyArray_NDIM(ap); i++) {
 #if NPY_RELAXED_STRIDES_CHECKING
+        /* skip dim == 1 as it is not required to have stride 0 */
         if (PyArray_DIM(ap, i) > 1) {
             /* if shape[i] == 1, the stride is never used */
-            aligned &= npy_is_aligned((void*)PyArray_STRIDES(ap)[i],
-                                      alignment);
+            aligned |= (npy_uintp)PyArray_STRIDES(ap)[i];
         }
         else if (PyArray_DIM(ap, i) == 0) {
             /* an array with zero elements is always aligned */
             return 1;
         }
 #else /* not NPY_RELAXED_STRIDES_CHECKING */
-        aligned &= npy_is_aligned((void*)PyArray_STRIDES(ap)[i], alignment);
+        aligned |= (npy_uintp)PyArray_STRIDES(ap)[i];
 #endif /* not NPY_RELAXED_STRIDES_CHECKING */
     }
-    return aligned != 0;
+    return npy_is_aligned((void *)aligned, alignment);
 }
 
 NPY_NO_EXPORT npy_bool

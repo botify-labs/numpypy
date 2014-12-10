@@ -48,8 +48,8 @@ Operating System :: MacOS
 """
 
 MAJOR               = 1
-MINOR               = 8
-MICRO               = 1
+MINOR               = 9
+MICRO               = 0
 ISRELEASED          = True
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
@@ -180,6 +180,16 @@ class sdist_checked(sdist):
         check_submodules()
         sdist.run(self)
 
+def generate_cython():
+    cwd = os.path.abspath(os.path.dirname(__file__))
+    print("Cythonizing sources")
+    p = subprocess.call([sys.executable,
+                          os.path.join(cwd, 'tools', 'cythonize.py'),
+                          'numpy/random'],
+                         cwd=cwd)
+    if p != 0:
+        raise RuntimeError("Running cythonize failed!")
+
 def setup_package():
     src_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     old_path = os.getcwd()
@@ -218,13 +228,15 @@ def setup_package():
 
         FULLVERSION, GIT_REVISION = get_version_info()
         metadata['version'] = FULLVERSION
-    elif len(sys.argv) >= 2 and sys.argv[1] == 'bdist_wheel':
-        # bdist_wheel needs setuptools
-        import setuptools
-        from numpy.distutils.core import setup
-        metadata['configuration'] = configuration
     else:
+        if len(sys.argv) >= 2 and sys.argv[1] == 'bdist_wheel':
+            # bdist_wheel needs setuptools
+            import setuptools
         from numpy.distutils.core import setup
+        cwd = os.path.abspath(os.path.dirname(__file__))
+        if not os.path.exists(os.path.join(cwd, 'PKG-INFO')):
+            # Generate Cython sources, unless building from source release
+            generate_cython()
         metadata['configuration'] = configuration
 
     try:

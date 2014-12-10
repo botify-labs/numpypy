@@ -62,6 +62,11 @@ class TestTake(TestCase):
             if hasattr(sys, 'getrefcount'):
                 assert_(all(sys.getrefcount(o) == 3 for o in objects))
 
+    def test_unicode_mode(self):
+        d = np.arange(10)
+        k = b'\xc3\xa4'.decode("UTF8")
+        assert_raises(ValueError, d.take, 5, mode=k)
+
 
 if __name__ == "__main__":
     run_module_suite()

@@ -378,8 +378,8 @@ static inline int
 get_fp_invalid_and_clear(void)
 {
     int status;
-    status = PyUFunc_getfperr();
-    return !!(status & UFUNC_FPE_INVALID);
+    status = npy_clear_floatstatus();
+    return !!(status & NPY_FPE_INVALID);
 }
 
 static inline void
@@ -389,7 +389,7 @@ set_fp_invalid_or_clear(int error_occurred)
         npy_set_floatstatus_invalid();
     }
     else {
-        PyUFunc_getfperr();
+        npy_clear_floatstatus();
     }
 }
 
@@ -2208,10 +2208,10 @@ process_@lapack_func@_results(GEEV_PARAMS_t *NPY_UNUSED(params))
 
 
 /**begin repeat
-   #TYPE=FLOAT,DOUBLE,CFLOAT,CDOUBLE#
-   #COMPLEXTYPE=CFLOAT,CDOUBLE,CFLOAT,CDOUBLE#
-   #ftype=fortran_real,fortran_doublereal,fortran_complex,fortran_doublecomplex#
-   #lapack_func=sgeev,dgeev,cgeev,zgeev#
+   #TYPE=FLOAT,DOUBLE,CDOUBLE#
+   #COMPLEXTYPE=CFLOAT,CDOUBLE,CDOUBLE#
+   #ftype=fortran_real,fortran_doublereal,fortran_doublecomplex#
+   #lapack_func=sgeev,dgeev,zgeev#
  */
 
 static inline void
@@ -2875,27 +2875,6 @@ static char equal_3_types[] = {
     NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE
 };
 
-static char equal_4_types[] = {
-    NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
-    NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
-    NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT,
-    NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE
-};
-
-static char equal_5_types[] = {
-    NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
-    NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
-    NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT,
-    NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE
-};
-
-static char equal_6_types[] = {
-    NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
-    NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
-    NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT, NPY_CFLOAT,
-    NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE, NPY_CDOUBLE
-};
-
 /* second result is logdet, that will always be a REAL */
 static char slogdet_types[] = {
     NPY_FLOAT, NPY_FLOAT, NPY_FLOAT,
@@ -3073,7 +3052,7 @@ GUFUNC_DESCRIPTOR_t gufunc_descriptors [] = {
         "svd when n>=m. ",
         4, 1, 1,
         FUNC_ARRAY_NAME(svd_N),
-        equal_2_types
+        svd_1_1_types
     },
     {
         "svd_n",

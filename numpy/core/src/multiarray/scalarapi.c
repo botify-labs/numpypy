@@ -634,7 +634,7 @@ PyArray_Scalar(void *data, PyArray_Descr *descr, PyObject *base)
     copyswap = descr->f->copyswap;
     type = descr->typeobj;
     swap = !PyArray_ISNBO(descr->byteorder);
-    if PyTypeNum_ISSTRING(type_num) {
+    if (PyTypeNum_ISSTRING(type_num)) {
         /* Eliminate NULL bytes */
         char *dptr = data;
 
@@ -831,8 +831,9 @@ PyArray_Scalar(void *data, PyArray_Descr *descr, PyObject *base)
 
 /*NUMPY_API
  *
- *Return either an array or the appropriate Python object if the array
- *is 0d and matches a Python type.
+ * Return either an array or the appropriate Python object if the array
+ * is 0d and matches a Python type.
+ * steals reference to mp
  */
 NPY_NO_EXPORT PyObject *
 PyArray_Return(PyArrayObject *mp)

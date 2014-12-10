@@ -175,11 +175,15 @@ def check_math_capabilities(config, moredefs, mathlibs):
                              headers=headers):
             moredefs.append((fname2def(f), 1))
 
-    for dec, fn in OPTIONAL_GCC_ATTRIBUTES:
-        if config.check_funcs_once([fn],
-                                   decl=dict((('%s %s' % (dec, fn), True),)),
-                                   call=False):
+    for dec, fn in OPTIONAL_FUNCTION_ATTRIBUTES:
+        if config.check_func(fn, decl='int %s %s(void *);' % (dec, fn),
+                             call=False):
             moredefs.append((fname2def(fn), 1))
+
+    for fn in OPTIONAL_VARIABLE_ATTRIBUTES:
+        if config.check_func(fn, decl='int %s a;' % (fn), call=False):
+            m = fn.replace("(", "_").replace(")", "_")
+            moredefs.append((fname2def(m), 1))
 
     # C99 functions: float and long double versions
     check_funcs(C99_FUNCS_SINGLE)
@@ -471,7 +475,7 @@ def configuration(parent_package='',top_path=None):
                            'MOTOROLA_EXTENDED_12_BYTES_BE',
                            'IEEE_QUAD_LE', 'IEEE_QUAD_BE',
                            'IEEE_DOUBLE_LE', 'IEEE_DOUBLE_BE',
-                           'DOUBLE_DOUBLE_BE']:
+                           'DOUBLE_DOUBLE_BE', 'DOUBLE_DOUBLE_LE']:
                     moredefs.append(('HAVE_LDOUBLE_%s' % rep, 1))
                 else:
                     raise ValueError("Unrecognized long double format: %s" % rep)
@@ -718,6 +722,8 @@ def configuration(parent_package='',top_path=None):
                      join('src', 'npysort', 'heapsort.c.src'),
                      join('src', 'private', 'npy_partition.h.src'),
                      join('src', 'npysort', 'selection.c.src'),
+                     join('src', 'private', 'npy_binsearch.h.src'),
+                     join('src', 'npysort', 'binsearch.c.src'),
                     ]
     if '__pypy__' not in sys.builtin_module_names:
         config.add_library('npysort',
@@ -784,7 +790,6 @@ def configuration(parent_package='',top_path=None):
             join('include', 'numpy', 'arrayscalars.h'),
             join('include', 'numpy', 'noprefix.h'),
             join('include', 'numpy', 'npy_interrupt.h'),
-            join('include', 'numpy', 'oldnumeric.h'),
             join('include', 'numpy', 'npy_3kcompat.h'),
             join('include', 'numpy', 'npy_math.h'),
             join('include', 'numpy', 'halffloat.h'),
@@ -802,6 +807,7 @@ def configuration(parent_package='',top_path=None):
             ] + npysort_sources + npymath_sources
 
     multiarray_src = [
+            join('src', 'multiarray', 'alloc.c'),
             join('src', 'multiarray', 'arrayobject.c'),
             join('src', 'multiarray', 'arraytypes.c.src'),
             join('src', 'multiarray', 'array_assign.c'),
@@ -873,9 +879,8 @@ def configuration(parent_package='',top_path=None):
         from numpy.distutils.misc_util import get_cmd
 
         subpath = join('src', 'umath')
-        # NOTE: For manual template conversion of loops.h.src, read the note
-        #       in that file.
         sources = [
+            join(local_dir, subpath, 'loops.h.src'),
             join(local_dir, subpath, 'loops.c.src'),
             join(local_dir, subpath, 'simd.inc.src')]
 
@@ -905,6 +910,7 @@ def configuration(parent_package='',top_path=None):
             join('src', 'umath', 'reduction.c'),
             join('src', 'umath', 'funcs.inc.src'),
             join('src', 'umath', 'simd.inc.src'),
+            join('src', 'umath', 'loops.h.src'),
             join('src', 'umath', 'loops.c.src'),
             join('src', 'umath', 'ufunc_object.c'),
             join('src', 'umath', 'ufunc_type_resolution.c')]
@@ -913,7 +919,8 @@ def configuration(parent_package='',top_path=None):
             generate_umath_py,
             join('src', 'multiarray', 'common.h'),
             join('src', 'umath', 'simd.inc.src'),
-            join(codegen_dir, 'generate_ufunc_api.py'),] + npymath_sources
+            join(codegen_dir, 'generate_ufunc_api.py'),
+            join('src', 'private', 'ufunc_override.h')] + npymath_sources
 
     if not ENABLE_SEPARATE_COMPILATION:
         umath_deps.extend(umath_src)

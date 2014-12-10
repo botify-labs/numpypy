@@ -21,29 +21,31 @@ A Guide to NumPy/SciPy Documentation
    It is available from:
 
    * `numpydoc on PyPI <http://pypi.python.org/pypi/numpydoc>`_
-   * `numpydoc on GitHub (in main numpy repository)
-     <https://github.com/numpy/numpy/blob/master/doc/sphinxext/numpydoc.py>`_
+   * `numpydoc on GitHub <https://github.com/numpy/numpydoc/>`_
 
    Details of how to use it can be found `here
-   <https://github.com/numpy/numpy/blob/master/doc/sphinxext/README.txt>`__ and
+   <https://github.com/numpy/numpydoc/blob/master/README.rst>`__ and
    `here
    <https://github.com/numpy/numpy/blob/master/doc/HOWTO_BUILD_DOCS.rst.txt>`__
 
 Overview
 --------
-In general, we follow the standard Python style conventions as described here:
- * `Style Guide for C Code <http://www.python.org/peps/pep-0007.html>`_
- * `Style Guide for Python Code <http://www.python.org/peps/pep-0008.html>`_
- * `Docstring Conventions <http://www.python.org/peps/pep-0257.html>`_
+We mostly follow the standard Python style conventions as described here:
+ * `Style Guide for C Code <http://python.org/dev/peps/pep-0007/>`_
+ * `Style Guide for Python Code <http://python.org/dev/peps/pep-0008/>`_
+ * `Docstring Conventions <http://python.org/dev/peps/pep-0257/>`_
 
 Additional PEPs of interest regarding documentation of code:
- * `Docstring Processing Framework <http://www.python.org/peps/pep-0256.html>`_
- * `Docutils Design Specification <http://www.python.org/peps/pep-0258.html>`_
+ * `Docstring Processing Framework <http://python.org/dev/peps/pep-0256/>`_
+ * `Docutils Design Specification <http://python.org/dev/peps/pep-0258/>`_
 
 Use a code checker:
  * `pylint <http://www.logilab.org/857>`_
- * `pyflakes` easy_install pyflakes
+ * `pyflakes <https://pypi.python.org/pypi/pyflakes>`_
  * `pep8.py <http://svn.browsershots.org/trunk/devtools/pep8/pep8.py>`_
+ * `flake8 <https://pypi.python.org/pypi/flake8>`_
+ * `vim-flake8 <https://github.com/nvie/vim-flake8>`_ plugin for
+   automatically checking syntax and style with flake8
 
 The following import conventions are used throughout the NumPy source
 and documentation::
@@ -260,7 +262,7 @@ The sections of the docstring are:
      LinAlgException
          If the matrix is not numerically invertible.
 
-   This section should be used judiciously, i.e only for errors
+   This section should be used judiciously, i.e., only for errors
    that are non-obvious or have a large chance of getting raised.
 
 8. **See Also**
