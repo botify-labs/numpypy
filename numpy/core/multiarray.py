@@ -56,8 +56,14 @@ def NotImplementedFunc(func):
     return tmp
 
 for name in '''
-ALLOW_THREADS BUFSIZE nested_iters
-broadcast fromiter fromfile newbuffer getbuffer
+CLIP WRAP RAISE MAXDIMS ALLOW_THREADS BUFSIZE
+'''.split():
+    if name not in globals():
+        globals()[name] = None
+ 
+for name in '''
+nditer nested_iters
+broadcast empty_like fromiter fromfile frombuffer newbuffer getbuffer
 int_asbuffer set_numeric_ops can_cast promote_types
 min_scalar_type lexsort compare_chararrays putmask einsum inner
 _vec_string datetime_data correlate correlate2
@@ -66,5 +72,3 @@ _flagdict flagsobj
 '''.split():
     if name not in globals():
         globals()[name] = NotImplementedFunc(name)
-    else:
-        print 'multiarray now implements %s, please remove from core/multiarray list of NotImplementedFuncs' % name
