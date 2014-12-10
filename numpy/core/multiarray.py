@@ -60,7 +60,7 @@ ALLOW_THREADS BUFSIZE nested_iters
 broadcast fromiter fromfile newbuffer getbuffer
 int_asbuffer set_numeric_ops can_cast promote_types
 min_scalar_type lexsort compare_chararrays putmask einsum inner
-_vec_string datetime_data
+_vec_string datetime_data correlate correlate2
 datetime_as_string busday_offset busday_count is_busday busdaycalendar
 _flagdict flagsobj
 '''.split():
