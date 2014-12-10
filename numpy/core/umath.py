@@ -36,9 +36,7 @@ def NotImplementedFunc(func):
     return tmp
 
 for name in '''
-hypot remainder frompyfunc ldexp nextafter _arg
+hypot remainder frompyfunc ldexp nextafter _arg mod
 '''.split():
     if name not in globals():
         globals()[name] = NotImplementedFunc(name)
-    else:
-        print 'umath now implements %s, please remove from core/umath list of NotImplementedFuncs' % name
