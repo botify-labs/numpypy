@@ -660,7 +660,7 @@ class Configuration(object):
 
     _list_keys = ['packages', 'ext_modules', 'data_files', 'include_dirs',
                   'libraries', 'headers', 'scripts', 'py_modules',
-                  'installed_libraries', 'define_macros']
+                  'installed_libraries', 'define_macros', 'shared_libraries']
     _dict_keys = ['package_dir', 'installed_pkg_config']
     _extra_keys = ['name', 'version']
 
@@ -1483,7 +1483,8 @@ class Configuration(object):
                 * language
 
         """
-        self._add_library(name, sources, None, build_info)
+        # Add to libraries list so that it is build with build_clib
+        self.libraries.append((name, self._add_library(name, sources, None, build_info)))
 
         dist = self.get_distribution()
         if dist is not None:
@@ -1504,8 +1505,7 @@ class Configuration(object):
 
         self._fix_paths_dict(build_info)
 
-        # Add to libraries list so that it is build with build_clib
-        self.libraries.append((name, build_info))
+        return build_info
 
     def add_installed_library(self, name, sources, install_dir, build_info=None):
         """
@@ -1555,9 +1555,61 @@ class Configuration(object):
             build_info = {}
 
         install_dir = os.path.join(self.package_path, install_dir)
-        self._add_library(name, sources, install_dir, build_info)
+        # Add to libraries list so that it is build with build_clib
+        self.libraries.append((name, self._add_library(name, sources, None, build_info)))
         self.installed_libraries.append(InstallableLib(name, build_info, install_dir))
+    
+    def add_shared_library(self, name, sources, install_dir, build_info=None):
+        """
+        Similar to add_library, but build a shared object instead (*.so, *.dll)
 
+        Most C libraries used with `distutils` are only used to build python
+        extensions, but shared libraries built through this method will be installed
+        so that they can be used by cffi
+
+        Parameters
+        ----------
+        name : str
+            Name of the installed library.
+        sources : sequence
+            List of the library's source files. See `add_library` for details.
+        install_dir : str
+            Path to install the library, relative to the current sub-package.
+        build_info : dict, optional
+            The following keys are allowed:
+
+                * depends
+                * macros
+                * include_dirs
+                * extra_compiler_args
+                * extra_f77_compiler_args
+                * extra_f90_compiler_args
+                * f2py_options
+                * language
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        add_library, add_npy_pkg_config, get_info
+
+        Notes
+        -----
+        The best way to encode the options required to link against the specified
+        C libraries is to use a "libname.ini" file, and use `get_info` to
+        retrieve the required options (see `add_npy_pkg_config` for more
+        information).
+
+        """
+        if not build_info:
+            build_info = {}
+
+        install_dir = os.path.join(self.package_path, install_dir)
+        # Add to libraries list so that it is build with build_clib
+        self.shared_libraries.append((name, self._add_library(name, sources, None, build_info)))
+ 
     def add_npy_pkg_config(self, template, install_dir, subst_dict=None):
         """
         Generate and install a npy-pkg config file from a template.

@@ -47,7 +47,7 @@ def configuration(parent_package='',top_path=None):
         have_cffi = False
     if have_cffi:
         #create the dll/so for the cffi version
-        config.add_installed_library('_mtrand',
+        config.add_shared_library('_mtrand',
                          sources=[join('mtrand', x) for x in
                                   ['randomkit.c', 'distributions.c']],
                          install_dir = '.',
@@ -57,10 +57,6 @@ def configuration(parent_package='',top_path=None):
                                         ],
                              'define_macros': defs,
                             }
-                        )
-        config.add_extension('_mtrand',
-                         sources=[join('mtrand', x) for x in
-                                  ['randomkit.c', 'distributions.c']],
                         )
     else:
         config.add_extension('mtrand',

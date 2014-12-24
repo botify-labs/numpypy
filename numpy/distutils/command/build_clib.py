@@ -101,6 +101,7 @@ class build_clib(old_build_clib):
             self._f_compiler = None
 
         self.build_libraries(self.libraries)
+        self.build_shared_libraries(self.distribution.shared_libraries)
 
         if self.inplace:
             for l in  self.distribution.installed_libraries:
@@ -117,11 +118,15 @@ class build_clib(old_build_clib):
             filenames.extend(get_lib_source_files(lib))
         return filenames
 
+    def build_shared_libraries(self, libraries):
+        for (lib_name, build_info) in libraries:
+            self.build_a_library(build_info, lib_name, libraries, link='link_shared_lib')
+
     def build_libraries(self, libraries):
         for (lib_name, build_info) in libraries:
             self.build_a_library(build_info, lib_name, libraries)
 
-    def build_a_library(self, build_info, lib_name, libraries):
+    def build_a_library(self, build_info, lib_name, libraries, link='create_static_lib'):
         # default compilers
         compiler = self.compiler
         fcompiler = self._f_compiler
@@ -271,7 +276,7 @@ class build_clib(old_build_clib):
 
         # assume that default linker is suitable for
         # linking Fortran object files
-        compiler.create_static_lib(objects, lib_name,
+        getattr(compiler, link)(objects, lib_name,
                                    output_dir=self.build_clib,
                                    debug=self.debug)
 
