@@ -1559,7 +1559,7 @@ class Configuration(object):
         self.libraries.append((name, self._add_library(name, sources, None, build_info)))
         self.installed_libraries.append(InstallableLib(name, build_info, install_dir))
     
-    def add_shared_library(self, name, sources, install_dir, build_info=None):
+    def add_shared_library(self, name, sources, install_dir='.', build_info=None):
         """
         Similar to add_library, but build a shared object instead (*.so, *.dll)
 

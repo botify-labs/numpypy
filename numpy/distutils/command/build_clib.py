@@ -276,10 +276,15 @@ class build_clib(old_build_clib):
 
         # assume that default linker is suitable for
         # linking Fortran object files
-        getattr(compiler, link)(objects, lib_name,
+        if link == 'link_shared_lib':
+            getattr(compiler, link)(objects, lib_name,
+                                   output_dir=self.build_temp,
+                                   libraries=build_info.get('libraries', []),
+                                   debug=self.debug)
+        else:
+            getattr(compiler, link)(objects, lib_name,
                                    output_dir=self.build_clib,
                                    debug=self.debug)
-
         # fix library dependencies
         clib_libraries = build_info.get('libraries', [])
         for lname, binfo in libraries:
