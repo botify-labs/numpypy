@@ -1607,8 +1607,9 @@ class Configuration(object):
             build_info = {}
 
         install_dir = os.path.join(self.package_path, install_dir)
-        # Add to libraries list so that it is build with build_clib
-        self.shared_libraries.append((name, self._add_library(name, sources, None, build_info)))
+        # Add to shared_libraries list so that it is build with build_clib
+        _build_info = self._add_library(name, sources, None, build_info)
+        self.shared_libraries.append((name, _build_info, install_dir))
  
     def add_npy_pkg_config(self, template, install_dir, subst_dict=None):
         """

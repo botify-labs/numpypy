@@ -110,6 +110,12 @@ class build_clib(old_build_clib):
                 target =  os.path.join(l.target_dir, libname)
                 self.mkpath(l.target_dir)
                 shutil.copy(source, target)
+            for l in self.distribution.shared_libraries:
+                libname = l[0] + self.compiler.shared_lib_extension
+                source = os.path.join(self.build_clib, libname)
+                target =  os.path.join(l[2], libname)
+                self.mkpath(target)
+                shutil.copy(source, target)
 
     def get_source_files(self):
         self.check_library_list(self.libraries)
@@ -119,7 +125,7 @@ class build_clib(old_build_clib):
         return filenames
 
     def build_shared_libraries(self, libraries):
-        for (lib_name, build_info) in libraries:
+        for (lib_name, build_info, target_dir) in libraries:
             self.build_a_library(build_info, lib_name, libraries, link='link_shared_lib')
 
     def build_libraries(self, libraries):
@@ -277,18 +283,18 @@ class build_clib(old_build_clib):
         # assume that default linker is suitable for
         # linking Fortran object files
         if link == 'link_shared_lib':
-            getattr(compiler, link)(objects, lib_name,
+            compiler.link_shared_lib(objects, lib_name,
                                    output_dir=self.build_temp,
                                    libraries=build_info.get('libraries', []),
                                    debug=self.debug)
         else:
-            getattr(compiler, link)(objects, lib_name,
+            compiler.create_static_lib(objects, lib_name,
                                    output_dir=self.build_clib,
                                    debug=self.debug)
-        # fix library dependencies
-        clib_libraries = build_info.get('libraries', [])
-        for lname, binfo in libraries:
-            if lname in clib_libraries:
-                clib_libraries.extend(binfo[1].get('libraries', []))
-        if clib_libraries:
-            build_info['libraries'] = clib_libraries
+            # fix library dependencies
+            clib_libraries = build_info.get('libraries', [])
+            for lname, binfo in libraries:
+                if lname in clib_libraries:
+                    clib_libraries.extend(binfo[1].get('libraries', []))
+            if clib_libraries:
+                build_info['libraries'] = clib_libraries
