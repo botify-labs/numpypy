@@ -399,7 +399,7 @@ set_fp_invalid_or_clear(int error_occurred)
  *****************************************************************************
  */
 
-#define UMATH_LINALG_MODULE_NAME "_umath_linalg"
+#define UMATH_LINALG_MODULE_NAME "_umath_linalg_capi"
 
 typedef union {
     fortran_complex f;
@@ -3173,7 +3173,7 @@ PyObject *PyInit__umath_linalg(void)
 #else
 #define RETVAL
 PyMODINIT_FUNC
-init_umath_linalg(void)
+init_umath_linalg_capi(void)
 #endif
 {
     PyObject *m;
@@ -3208,3 +3208,14 @@ init_umath_linalg(void)
 
     return RETVAL;
 }
+
+#ifdef PYPY_VERSION
+/*UFUNC_API*/
+NPY_NO_EXPORT int
+PyUFunc_getfperr(void)
+{
+    int retstatus;
+    UFUNC_CHECK_STATUS(retstatus);
+    return retstatus;
+}
+#endif

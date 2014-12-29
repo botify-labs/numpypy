@@ -718,7 +718,8 @@ def configuration(parent_package='',top_path=None):
                      join('src', 'private', 'npy_binsearch.h.src'),
                      join('src', 'npysort', 'binsearch.c.src'),
                     ]
-    config.add_library('npysort',
+    if '__pypy__' not in sys.builtin_module_names:
+        config.add_library('npysort',
                        sources=npysort_sources,
                        include_dirs=[])
 

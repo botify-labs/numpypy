@@ -153,7 +153,6 @@ typedef struct {
 } PyBoolScalarObject;
 
 #define import_array()
-extern PyTypeObject PyArray_Type;
 #define PyArray_New _PyArray_New
 
 """
