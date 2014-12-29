@@ -39,13 +39,19 @@ def configuration(parent_package='',top_path=None):
     except ImportError:
         have_cffi = False
     # TODO replace these two modules with cffi equivalents
-    config.add_extension('lapack_lite',
+    build__umath_linalg_capi = True
+    if '__pypy__' in sys.builtin_module_names:
+        import _numpypy.umath
+        if 'frompyfunc' not in dir(_numpypy.umath):
+            build__umath_linalg_capi = False
+    if build__umath_linalg_capi:
+        config.add_extension('lapack_lite',
                          sources = [get_lapack_lite_sources],
                          depends = ['lapack_litemodule.c'] + lapack_lite_src,
                          extra_info = lapack_info
                          )
-    # umath_linalg module
-    config.add_extension('_umath_linalg_capi',
+        # umath_linalg module
+        config.add_extension('_umath_linalg_capi',
                          sources = [get_lapack_lite_sources],
                          depends =  ['umath_linalg.c.src'] + lapack_lite_src,
                          extra_info = lapack_info,

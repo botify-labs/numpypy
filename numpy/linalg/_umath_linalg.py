@@ -1,4 +1,5 @@
 # A CFFI version of numpy/linalg/_umath_linalg.c.src
+from warnings import warn
 
 try:
     import cffi
@@ -11,7 +12,10 @@ if 0 and have_cffi and '__pypy__' in sys.builtin_module_names:
     # TODO: use cffi versions with frompyfunc
     pass
 else:
-    from _umath_linalg_capi import *
+    try:
+        from _umath_linalg_capi import *
+    except:
+        warn('no cffi linalg functions and no _umath_linalg_capi module, expect problems.')
 
 
 def NotImplementedFunc(func):
