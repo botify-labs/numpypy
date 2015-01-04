@@ -6,12 +6,20 @@ import sys
 
 try:
     import cffi
-    have_cffi = True
+    use_cffi = True
 except ImportError:
-    have_cffi = False
+    use_cffi = False
 
 
-if and have_cffi and '__pypy__' in sys.builtin_module_names:
+if '__pypy__' in sys.builtin_module_names:
+    import _numpypy.umath
+    if 'frompyfunc' not in dir(_numpypy.umath):
+        use_cffi = False
+else:
+    # Default on cpython is not to use cffi
+    use_cffi = False 
+
+if have_cffi:
     import numpy as np
     # numeric types have not been imported yet
     import numpy.core.numerictypes as nt
@@ -307,6 +315,12 @@ zgemm{ul}(char *transa, char *transb,
              f2c_doublecomplex *c, int *ldc);
 
     '''.format(**macros))
+
+
+    suffix = '.so'
+    if sys.platform == 'win32':
+        suffix = '.dll'
+    _C = ffi.dlopen(os.path.abspath(os.path.dirname(__file__)) + '/lapack_lite' + suffix)
 
     def offset_ptr(ptr, offset):
         return ptr + offset

@@ -57,8 +57,14 @@ def configuration(parent_package='',top_path=None):
                          extra_info = lapack_info,
                          libraries = ['npymath']
                          )
-
-    return config
+    else:
+        config.add_shared_library('lapack_lite',
+                         sources = [get_lapack_lite_sources],
+                         depends = ['lapack_litemodule.c'] + lapack_lite_src,
+                         extra_info = lapack_info,
+                         build_info = { 'depends': depends, },
+                         )
+     return config
 
 if __name__ == '__main__':
     from numpy.distutils.core import setup
