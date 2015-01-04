@@ -34,6 +34,12 @@ class install_clib(Command):
             source = os.path.join(build_dir, name)
             self.mkpath(target_dir)
             self.outfiles.append(self.copy_file(source, target_dir)[0])
+        for l in self.distribution.shared_libraries:
+            target_dir = os.path.join(self.install_dir, l[2])
+            name = l[0] + compiler.shared_lib_extension
+            source = os.path.join(build_dir, name)
+            self.mkpath(target_dir)
+            self.outfiles.append(self.copy_file(source, target_dir)[0])
 
     def get_outputs(self):
         return self.outfiles
