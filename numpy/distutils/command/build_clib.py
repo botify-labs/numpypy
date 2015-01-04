@@ -111,7 +111,7 @@ class build_clib(old_build_clib):
                 self.mkpath(l.target_dir)
                 shutil.copy(source, target)
             for l in self.distribution.shared_libraries:
-                libname = l[0] + self.compiler.shared_lib_extension
+                libname = self.compiler.library_filename(l[0], lib_type='shared')
                 source = os.path.join(self.build_clib, libname)
                 target =  os.path.join(l[2], libname)
                 self.mkpath(target)
