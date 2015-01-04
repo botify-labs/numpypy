@@ -1,4 +1,4 @@
-import os, imp
+import os, imp, sys
 from cffi import FFI
 ffi = FFI()
 import numpy as np
@@ -301,10 +301,9 @@ extern long rk_logseries(rk_state *state, double p);
 
 # XXX this should open a shared object, not a extension module
 
-suffixes = imp.get_suffixes()
-for suffix, mode, typ in suffixes:
-    if typ == imp.C_EXTENSION:
-        break
+suffix = '.so'
+if sys.platform == 'win32':
+    suffix = '.dll'
 _mtrand = ffi.dlopen(os.path.abspath(os.path.dirname(__file__)) + '/_mtrand' + suffix)
 
 seed = _mtrand.rk_seed
