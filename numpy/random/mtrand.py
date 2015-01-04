@@ -302,9 +302,16 @@ extern long rk_logseries(rk_state *state, double p);
 # XXX this should open a shared object, not a extension module
 
 suffix = '.so'
+prefix = 'lib'
 if sys.platform == 'win32':
     suffix = '.dll'
-_mtrand = ffi.dlopen(os.path.abspath(os.path.dirname(__file__)) + '/_mtrand' + suffix)
+    prefix = ''
+shared_name = os.path.abspath(os.path.dirname(__file__)) + '/' + prefix + '_mtrand' + suffix
+if not os.path.exists(shared_name):
+    # cffi should support some canonical name formatting like 
+    # distutils.ccompiler.library_filename()
+    raise ValueError('could not find "%s", perhaps the name is slightly off' % shared_name)
+_mtrand = ffi.dlopen(shared_name)
 
 seed = _mtrand.rk_seed
 
