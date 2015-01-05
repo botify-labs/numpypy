@@ -39,7 +39,7 @@ class SearchableSet(object):
         return len(self._items)
 
 class Item(object):
-    def __init__(self, name, kind, subitems=None):
+    def __init__(self, name, kind, subitems=[]):
         self.name = name
         self.kind = kind
         self.subitems = subitems
@@ -71,8 +71,12 @@ def find_numpy_items(python, modname="numpy", attr=None):
     lines = subprocess.check_output(args).splitlines()
     items = SearchableSet()
     for line in lines:
+        # since calling a function in "search.py" may have printed side effects,
+        # make sure the line begins with '[UT] : '
+        if not (line[:1] in KINDS.values() and line[1:4] == ' : '):
+            continue
         kind, name = line.split(" : ", 1)
-        subitems = None
+        subitems = []
         if kind == KINDS["TYPE"] and name in SPECIAL_NAMES and attr is None:
             subitems = find_numpy_items(python, modname, name)
         items.add(Item(name, kind, subitems))
@@ -93,10 +97,19 @@ def split(lst):
                 l[i].append(lst[k * lgt + i])
     return l
 
-SPECIAL_NAMES = ["ndarray", "dtype", "generic", "flatiter", "ufunc"]
+SPECIAL_NAMES = ["ndarray", "dtype", "generic", "flatiter", "ufunc",
+                 "nditer"]
 
 def main(argv):
-    cpy_items = find_numpy_items("/usr/bin/python")
+    if 'help' in argv[1]:
+        print '\nusage: python', os.path.dirname(__file__), '<path-to-pypy> [<outfile.html>] [<path-to-cpython-with-numpy>]'
+        print '       path-to-cpython-with-numpy defaults to "/usr/bin/python"\n'
+        return 
+    if len(argv) < 4:
+        cpython = '/usr/bin/python'
+    else:
+        cpython = argv[3]
+    cpy_items = find_numpy_items(cpython)
     pypy_items = find_numpy_items(argv[1])
     ver = get_version_str(argv[1])
     all_items = []

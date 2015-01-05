@@ -25,21 +25,15 @@ def main(argv):
         subobj = getattr(obj, name)
         if subobj is None:
             continue
-        if isinstance(subobj, types.GetSetDescriptorType):
+        if isinstance(subobj, types.FunctionType):
             try:
-                a = obj(None)
-                getattr(a, name)
+                ret = subobj()
+                # the result of a hack for missing functions in numpypy
+                if ret is None:
+                    print name, 'None'
+                    pass
             except NotImplementedError:
-                #print >> sys.stderr, 'skipping attribute',name
-                continue
-            except:
-                pass
-        if isinstance(subobj, types.MethodType):
-            try:
-                a = obj(None)
-                getattr(a, name)
-            except NotImplementedError:
-                #print >> sys.stderr, 'skipping attribute',name
+                print name,'NotImplementedError'
                 continue
             except:
                 pass
