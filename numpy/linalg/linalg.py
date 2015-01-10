@@ -14,7 +14,7 @@ from __future__ import division, absolute_import, print_function
 __all__ = ['matrix_power', 'solve', 'tensorsolve', 'tensorinv', 'inv',
            'cholesky', 'eigvals', 'eigvalsh', 'pinv', 'slogdet', 'det',
            'svd', 'eig', 'eigh', 'lstsq', 'norm', 'qr', 'cond', 'matrix_rank',
-           'LinAlgError']
+           'LinAlgError', 'lapack_lite']
 
 import warnings
 
@@ -26,7 +26,12 @@ from numpy.core import (
     broadcast
     )
 from numpy.lib import triu, asfarray
-from numpy.linalg import lapack_lite, _umath_linalg
+from numpy.linalg import _umath_linalg
+try:
+    from numpy.linalg import lapack_lite
+except ImportError:
+    # is it the cffi version?
+    lapack_lite = getattr(_umath_linalg, 'lapack_lite', None)
 from numpy.matrixlib.defmatrix import matrix_power
 from numpy.compat import asbytes
 
@@ -1336,6 +1341,7 @@ def svd(a, full_matrices=1, compute_uv=1):
             gufunc = _umath_linalg.svd_n
 
         signature = 'D->d' if isComplexType(t) else 'd->d'
+        import pdb;pdb.set_trace()
         s = gufunc(a, signature=signature, extobj=extobj)
         s = s.astype(_realType(result_t))
         return s
