@@ -1341,7 +1341,6 @@ def svd(a, full_matrices=1, compute_uv=1):
             gufunc = _umath_linalg.svd_n
 
         signature = 'D->d' if isComplexType(t) else 'd->d'
-        import pdb;pdb.set_trace()
         s = gufunc(a, signature=signature, extobj=extobj)
         s = s.astype(_realType(result_t))
         return s

@@ -377,6 +377,8 @@ extern int
                nt.complex64: 'f2c_complex[1]', nt.complex128: 'f2c_doublecomplex[1]'}
 
     def toCptr(src):
+        if src is None:
+            return ffi.cast('void*', 0)
         pData = src.__array_interface__['data'][0]
         return ffi.cast(toCtypeP[src.dtype], pData)
 
@@ -458,7 +460,7 @@ extern int
             raise ValueError('called with differing dtypes, should not happen')
         psrc = toCptr(src)
         pdst = toCptr(dst)
-        pcolumns = ffi.new('int [1]', [data.columns])
+        pcolumns = ffi.new('int[1]', [data.columns])
         pcolumn_strides = ffi.new('int[1]', [data.column_strides / src.dtype.itemsize])
         pone = ffi.new('int[1]', [1])
         for i in range(data.rows):
@@ -624,19 +626,19 @@ extern int
                      query_iwork_size, liwork, info)
             if info[0] != 0:
                 return None
-            lwork[0] = query_work_size[0]
+            lwork[0] = int(query_work_size[0])
             liwork[0] = query_iwork_size[0]
             work = toCptr(np.empty([lwork[0]], dtype=typ))
             iwork = toCptr(np.empty([liwork[0]], dtype='int32'))
             
-            return eigh_params(a, w, work, None, iwork, n, lwork, 0, liwork,
+            return eigh_params(a, w, work, None, iwork, pN, lwork, 0, liwork,
                                pJOBZ, pUPLO)
 
         def call_func(params):
             rv = ffi.new('int[1]')
             getattr(lapack_lite, lapack_func)(params.JOBZ, params.UPLO, params.N,
                         toCptr(params.A), params.N, toCptr(params.W),
-                        params.WORK, params.LWORK, params.IWORK, paramw.LIWORK, rv)
+                        params.WORK, params.LWORK, params.IWORK, params.LIWORK, rv)
             return rv[0]
         return init_func, call_func
 
@@ -698,12 +700,13 @@ extern int
             eigval_out_ld = linearize_data(1, N, 0, out[0].strides[0])
             if 'V' == JOBZ:
                 eigvec_out_ld = linearize_data(N, N, out[1].strides[1], out[1].strides[0])
-            linearize_matrix(params.A, in0, matrix_in_ld)
+            copy_func = getattr(lapack_lite, cblas_typ + 'copy')
+            linearize_matrix(params.A, in0, matrix_in_ld, copy_func)
             not_ok = eigh_funcs[cblas_typ][call_func](params)
             if not_ok == 0:
-                delinearize_matrix(out[0], params.W, eigval_out_ld)
+                delinearize_matrix(out[0], params.W, eigval_out_ld, copy_func)
                 if 'V' == JOBZ:
-                    delinearize_matrix(out[1], params.A, eigvec_out_ld)
+                    delinearize_matrix(out[1], params.A, eigvec_out_ld, copy_func)
             else:
                 out[0].fill(base_vals[cblas_typ]['nan'])
                 if 'V' == JOBZ:
@@ -980,7 +983,13 @@ extern int
         def dump(self, name):
             print >> sys.stderr, name
             for p in self.params:
-                print >> sys.stderr, '\t%10s: %r' %(p, getattr(self, p))
+                v = getattr(self, p)
+                if isinstance(v, np.ndarray):
+                    print >> sys.stderr, '\t%10s: %r, %r' %(p, v.dtype, v.shape)
+                elif isinstance(v, int):
+                    print >> sys.stderr, '\t%10s: %r' %(p, v)
+                else:
+                    print >> sys.stderr, '\t%10s: %r %r' %(p, v, v[0])
 
     def mk_complex_eigenvectors(c, r, i, n):
         ''' make the complex eigenvectors from the real array produced by sgeev/zgeev.
@@ -1010,32 +1019,40 @@ extern int
             a = np.empty([n, n], typ)
             wr = np.empty([n], typ)
             wi = np.empty([n], typ)
+            w  = np.empty([n], complextyp)
             if jobvl == 'V':
                 vlr = np.empty([n, n], typ)
+                vl = np.empty([n, n*2], typ)
             else:
                 vlr = None
+                vl = None
             if jobvr == 'V':
                 vrr = np.empty([n, n], typ)
+                vr = np.empty([n, 2*n], typ)
             else:
                 vrr = None
+                vr = None
             work_size_query = ffi.new(toCtypeA[typ], [0])
             do_size_query = ffi.new('int[1]', [-1])
             rv = ffi.new('int[1]', [0])
-            getattr(lapack_lite, cblas_typ + 'geev')(jobvl, jobvr, n, a, n, wr, wi, vlr,
-                                            n, vrr, n, work_size_query,
-                                            do_size_query, rv)
+            pN = ffi.new('int[1]', [n])
+            getattr(lapack_lite, cblas_typ + 'geev')(jobvl, jobvr, pN, toCptr(a), pN,
+                                         toCptr(wr), toCptr(wi), toCptr(vl),
+                                         pN, toCptr(vr), pN, work_size_query,
+                                         do_size_query, rv)
             if rv[0] !=0:
                 return None
-            work_count = work_size_query[0]
-            work = np.empty([work_count / 2], complextyp)
-            return geev_params_struct(a, wr, wi, vlr, vrr, work, w, vlr, vrr, 
-                                      n, n, n, n, work_count[0], jobvl, jobvr)
+            work_count = ffi.new('int[1]', [int(work_size_query[0])])
+            work = np.empty([work_count[0] / 2], typ)
+            return geev_params_struct(a, wr, wi, vlr, vrr, work, w, vl, vr, 
+                                      pN, pN, pN, pN, work_count, jobvl, jobvr)
 
         def call_func(params):
             rv = ffi.new('int[1]', [0])
             getattr(lapack_lite, cblas_typ + 'geev')(params.JOBVL, params.JOBVR, params.N,
-                    params.A, params.LDA, params.WR, params.WI, params.VLR,
-                    params.LDVL, params.VRR, params.WORK, params.LWORK, rv)
+                    toCptr(params.A), params.LDA, toCptr(params.WR), toCptr(params.WI), 
+                    toCptr(params.VLR), params.LDVL, toCptr(params.VRR),
+                    params.LDVR, toCptr(params.WORK), params.LWORK, rv)
             return rv[0]
 
         def process_results(params):
@@ -1045,7 +1062,7 @@ extern int
             '''
             assert params.W.size == params.WR.size
             assert params.W.size == params.WI.size
-            assert params.W.size == params.N
+            assert params.W.size == params.N[0]
             params.W.real = params.WR
             params.W.imag = params.WI
             if 'V' == params.JOBVL:
@@ -1060,32 +1077,34 @@ extern int
             w = np.empty([n], typ)
             rwork = np.empty([2 * n], realtyp)
             if jobvl == 'V':
-                vlr = np.empty([n, n], typ)
+                vl = np.empty([n, n], typ)
             else:
-                vlr = None
+                vl = None
             if jobvr == 'V':
-                vrr = np.empty([n, n], typ)
+                vr = np.empty([n, n], typ)
             else:
-                vrr = None
+                vr = None
             work_size_query = ffi.new(toCtypeA[typ], [0])
             do_size_query = ffi.new('int[1]', [-1])
             rv = ffi.new('int[1]', [0])
-            getattr(lapack_lite, cblas_typ + 'geev')(jobvl, jobvr, n, a, n, w, vl,
-                                            n, vr, n, work_size_query,
-                                            do_size_query, rwork, rv)
+            pN = ffi.new('int[1]', [n])
+            getattr(lapack_lite, cblas_typ + 'geev')(jobvl, jobvr, pN, toCptr(a),
+                                         pN, toCptr(w), toCptr(vl), pN, toCptr(vr),
+                                         pN, work_size_query, do_size_query, toCptr(rwork), rv)
             if rv[0] !=0:
                 return None
             work_count = work_size_query[0][0]
             work = np.empty([work_count ], typ)
             return geev_params_struct(a, rwork, None, None, None, work, w, vl, vr, 
-                                      n, n, n, n, work_count[0], jobvl, jobvr)
+                                      pN, pN, pN, pN, work_count[0], jobvl, jobvr)
 
         def call_func(params):
             rv = ffi.new('int[1]', [0])
             getattr(lapack_lite, cblas_typ + 'geev')(params.JOBVL, params.JOBVR, params.N,
-                    params.A, params.LDA, params.W, params.VL, params.VR, 
-                    params.LDVL, params.VR, params.LVDR, params.WORK, params.LWORK,
-                    params.WR, # actually RWORK
+                    toCptr(params.A), params.LDA, toCptr(params.W), 
+                    toCptr(params.VL), params.LDVL, toCptr(params.VR), params.LVDR,
+                    toCptr(params.WORK), params.LWORK,
+                    toCptr(params.WR), # actually RWORK
                     rv)
             return rv[0]
 
@@ -1115,29 +1134,31 @@ extern int
             params = geev_funcs[cblas_typ][init_func](JOBVL, JOBVR, in0.shape[0])
             if params is None:
                 return
-            a_in = linearize_data(params.N, params.N, in0.strides[1], in0.strides[0])
-            w_out = linearize_data(1, params.N, 0, out[0].strides[0])
+            n = in0.shape[0]
+            a_in = linearize_data(n, n, in0.strides[1], in0.strides[0])
+            w_out = linearize_data(1, n, 0, out[0].strides[0])
             outcnt = 1
             if 'V' == JOBVL:
-                vl_out = linearize_data(params.N, params.N, 
+                vl_out = linearize_data(n, n, 
                                         out[outcnt].strides[1],
                                         out[outcnt].strides[0])
                 outcnt += 1
             if 'V' == JOBVR:
-                vr_out = linearize_data(params.N, params.N, 
+                vr_out = linearize_data(n, n, 
                                         out[outcnt].strides[1],
                                         out[outcnt].strides[0])
-            linearize_matrix(params.A, in0, a_in)
+            copy_func = getattr(lapack_lite, cblas_typ + 'copy')
+            linearize_matrix(params.A, in0, a_in, copy_func)
             not_ok = geev_funcs[cblas_typ][call_func](params)
             if not_ok == 0:
                 geev_funcs[cblas_typ][process_results](params)
-                delinearize_matrix(out0, params.W, w_out) 
+                delinearize_matrix(out[0], params.W, w_out, copy_func) 
                 outcnt = 1
                 if 'V' == JOBVL:
-                    delinearize_matrix(out[outcnt], params.VL, vl_out)
+                    delinearize_matrix(out[outcnt], params.VL, vl_out, copy_func)
                     outcnt += 1
                 if 'V' == JOBVR:
-                    delinearize_matrix(out[outcnt], params.VR, vr_out)
+                    delinearize_matrix(out[outcnt], params.VR, vr_out, copy_func)
             else:
                 error_occurred = 1;
                 for o in out:
@@ -1192,7 +1213,13 @@ extern int
         def dump(self, name):
             print >> sys.stderr, name
             for p in self.params:
-                print >> sys.stderr, '\t%10s: %r' %(p, getattr(self, p))
+                v = getattr(self, p)
+                if isinstance(v, np.ndarray):
+                    print >> sys.stderr, '\t%10s: %r, %r' %(p, v.dtype, v.shape)
+                elif isinstance(v, int):
+                    print >> sys.stderr, '\t%10s: %r' %(p, v)
+                else:
+                    print >> sys.stderr, '\t%10s: %r %r' %(p, v, v[0])
     
     def compute_urows_vtcolumns(jobz, m, n):
         min_m_n = min(m, n)
@@ -1208,7 +1235,6 @@ extern int
     def wrap_gesdd(typ, realtyp, cblas_typ):
         lapack_func = cblas_typ + 'gesdd'
         def init_func(jobz, m, n):
-            print 'start init_func from gesdd'
             min_m_n = min(m, n)
             u_size, vt_size = compute_urows_vtcolumns(jobz, m, n)
             if u_size < 0:
@@ -1229,8 +1255,8 @@ extern int
             pN = ffi.new('int[1]', [n])
             pM = ffi.new('int[1]', [m])
             pjobz = ffi.new('char[1]', [jobz])
-            pDo_query = ffi.new('int32', [-1])
-            rv = ffi.new('int32')
+            pDo_query = ffi.new('int[1]', [-1])
+            rv = ffi.new('int[1]')
             if realtyp is not None:
                 pWork_size_query = ffi.new(toCtypeA[realtyp])
                 s = np.empty([min_m_n], realtyp)
@@ -1239,40 +1265,40 @@ extern int
                 else:
                     rwork_size = 5 * min_m_n * min_m_n + 5*min_m_n
                 rwork = ffi.cast('void*', ffi.ffi.new('char[%d]' % rwork_size))
-                getattr(lapack_lite, lapack_func)(pjobz, pN, toCptr(a), pM, toCptr(s),
+                getattr(lapack_lite, lapack_func)(pjobz, pM, pN, toCptr(a), pM, toCptr(s),
                     toCptr(u), pM, toCptr(vt), pVt_column_count,
                     pWork_size_query, pDo_query, 
-                    rwork,
+                    toCPtr(rwork),
                     toCptr(iwork), rv)
             else:
                 rwork = None
                 s = np.empty([min_m_n], typ)
                 pWork_size_query = ffi.new(toCtypeA[typ])
-                getattr(lapack_lite, lapack_func)(pjobz, pN, toCptr(a), pM, toCptr(s),
+                getattr(lapack_lite, lapack_func)(pjobz, pM, pN, toCptr(a), pM, toCptr(s),
                     toCptr(u), pM, toCptr(vt), pVt_column_count,
                     pWork_size_query, pDo_query, 
                     toCptr(iwork), rv)
 
             if rv[0] != 0:
                 return None
-            work_count = ffi.new('int32[1]', [int(pWork_size_query[0])])
-            work = ffi.cast('void*', ffi.ffi.new('char[%d]' % work_count[0]))
+            work_count = ffi.new('int[1]', [int(pWork_size_query[0])])
+            work = ffi.cast('void*', ffi.new('char[%d]' % work_count[0]))
             return gesdd_params(a, s, u, vt, work, rwork, iwork, pM, pN, pM, pM,
                         pVt_column_count, work_count, pjobz)  
 
         if cblas_typ == 's' or cblas_typ == 'd':
             def call_func(params):
-                rv = ffi.new('int32')
-                getattr(lapack_lite, lapack_func)(params.JBOZ, params.M, params.N, toCptr(params.A),
-                                    params.LDA, toCptr(params.S), toCptr(params.S),
+                rv = ffi.new('int[1]')
+                getattr(lapack_lite, lapack_func)(params.JOBZ, params.M, params.N, toCptr(params.A),
+                                    params.LDA, toCptr(params.S), 
                                     toCptr(params.U), params.LDU, toCptr(params.VT),
-                                    toCptr(params.LDVT), params.WORK, params.LWORK,
+                                    params.LDVT, params.WORK, params.LWORK,
                                     toCptr(params.IWORK), rv)
                 return rv[0]
         else:
             def call_func(params):
-                rv = ffi.new('int32')
-                getattr(lapack_lite, lapack_func)(params.JBOZ, params.M, params.N, toCptr(params.A),
+                rv = ffi.new('int[1]')
+                getattr(lapack_lite, lapack_func)(params.JOBZ, params.M, params.N, toCptr(params.A),
                                     params.LDA, toCptr(params.S), toCptr(params.S),
                                     toCptr(params.U), params.LDU, toCptr(params.VT),
                                     toCptr(params.LDVT), params.WORK, params.LWORK,
@@ -1280,14 +1306,13 @@ extern int
                                     toCptr(params.IWORK), rv)
                 return rv[0]
 
-        def svd(JOBZ, in0, *out):
+        def svd(jobz, in0, *out):
             error_occurred = get_fp_invalid_and_clear()
             m, n = in0.shape[:2]
-            params = init_func(JOBZ, m, n)
+            params = init_func(jobz, m, n)
             if params is None:
                 return None
             min_m_n = min(m, n)
-            print '1'
             a_in = linearize_data(n, m, in0.strides[1], in0.strides[0])
             if jobz == 'N':
                 s_out = linearize_data(1, min_m_n, 0, out[0].strides[0])
@@ -1301,22 +1326,20 @@ extern int
                 u_out = linearize_data(ucols, m, out[0].strides[1], out[0].strides[0])
                 s_out = linearize_data(1, min_m_n, 0, out[1].strides[0])
                 v_out = linearize_data(n, vrows, out[2].strides[1], out[2].strides[0])
-            linearize_matrix(params.A, in0, a_in)
-            print '1'
+            copy_func = getattr(lapack_lite, cblas_typ + 'copy')
+            linearize_matrix(params.A, in0, a_in, copy_func)
             not_ok = call_func(params)
-            print '1'
             if not_ok == 0:
                 if jobz == 'N':
-                    delinearize_matrix(out[0], params.S, s_out)
+                    delinearize_matrix(out[0], params.S, s_out,copy_func)
                 else:
-                    delinearize_matrix(out[0], params.U, u_out)
-                    delinearize_matrix(out[1], params.S, s_out)
-                    delinearize_matrix(out[2], params.VT, v_out)
+                    delinearize_matrix(out[0], params.U, u_out,copy_func)
+                    delinearize_matrix(out[1], params.S, s_out,copy_func)
+                    delinearize_matrix(out[2], params.VT, v_out,copy_func)
             else:
                 error_occurred = 1;
                 for o in out:
                     o.fill(float('nan'))
-            print '1'
             set_fp_invalid_or_clear(error_occurred)
 
         def svd_N(*args):
