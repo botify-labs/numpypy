@@ -1009,13 +1009,13 @@ extern int
             w  = np.empty([n], complextyp)
             if jobvl == 'V':
                 vlr = np.empty([n, n], typ)
-                vl = np.empty([n, n*2], typ)
+                vl = np.empty([n, n], complextyp)
             else:
                 vlr = None
                 vl = None
             if jobvr == 'V':
                 vrr = np.empty([n, n], typ)
-                vr = np.empty([n, 2*n], typ)
+                vr = np.empty([n, n], complextyp)
             else:
                 vrr = None
                 vr = None
@@ -1024,8 +1024,8 @@ extern int
             rv = ffi.new('int[1]', [0])
             pN = ffi.new('int[1]', [n])
             getattr(lapack_lite, cblas_typ + 'geev')(jobvl, jobvr, pN, toCptr(a), pN,
-                                         toCptr(wr), toCptr(wi), toCptr(vl),
-                                         pN, toCptr(vr), pN, work_size_query,
+                                         toCptr(wr), toCptr(wi), toCptr(vlr),
+                                         pN, toCptr(vrr), pN, work_size_query,
                                          do_size_query, rv)
             if rv[0] !=0:
                 return None
@@ -1193,20 +1193,6 @@ extern int
         params = ('A', 'S', 'U', 'VT', 'WORK', 'RWORK', 'IWORK',
                   'M', 'N', 'LDA', 'LDU', 'LDVT', 'LWORK', 'JOBZ')
 
-        def dump(self, name):
-            print >> sys.stderr, name
-            for p in self.params:
-                v = getattr(self, p)
-                try:
-                    rep = v[0]
-                except:
-                    print >> sys.stderr, '\t%10s: %r' %(p, v)
-                else:
-                    if isinstance(v, np.ndarray):
-                        print >> sys.stderr, '\t%10s: %r, %r' %(p, v.dtype, v.shape)
-                    else:
-                        print >> sys.stderr, '\t%10s: %r %r' %(p, v, rep)
-    
     def compute_urows_vtcolumns(jobz, m, n):
         min_m_n = min(m, n)
         if jobz == 'N':
@@ -1244,7 +1230,7 @@ extern int
             pDo_query = ffi.new('int[1]', [-1])
             rv = ffi.new('int[1]')
             if realtyp is not None:
-                pWork_size_query = ffi.new(toCtypeA[realtyp])
+                pWork_size_query = ffi.new(toCtypeA[typ])
                 s = np.empty([min_m_n], realtyp)
                 if 'N'==jobz:
                     rwork_size = 7 * min_m_n
@@ -1256,6 +1242,9 @@ extern int
                     pWork_size_query, pDo_query, 
                     rwork,
                     toCptr(iwork), rv)
+                if rv[0] != 0:
+                    return None
+                work_count = ffi.new('int[1]', [int(pWork_size_query[0].r)])
             else:
                 rwork = None
                 s = np.empty([min_m_n], typ)
@@ -1264,10 +1253,9 @@ extern int
                     toCptr(u), pM, toCptr(vt), pVt_column_count,
                     pWork_size_query, pDo_query, 
                     toCptr(iwork), rv)
-
-            if rv[0] != 0:
-                return None
-            work_count = ffi.new('int[1]', [int(pWork_size_query[0])])
+                if rv[0] != 0:
+                    return None
+                work_count = ffi.new('int[1]', [int(pWork_size_query[0])])
             work = ffi.cast('void*', ffi.new('char[%d]' % (work_count[0] * typ.itemsize,)))
             return gesdd_params(a, s, u, vt, work, rwork, iwork, pM, pN, pM, pM,
                         pVt_column_count, work_count, pjobz)  
@@ -1285,9 +1273,9 @@ extern int
             def call_func(params):
                 rv = ffi.new('int[1]')
                 getattr(lapack_lite, lapack_func)(params.JOBZ, params.M, params.N, toCptr(params.A),
-                                    params.LDA, toCptr(params.S), toCptr(params.S),
+                                    params.LDA, toCptr(params.S),
                                     toCptr(params.U), params.LDU, toCptr(params.VT),
-                                    toCptr(params.LDVT), params.WORK, params.LWORK,
+                                    params.LDVT, params.WORK, params.LWORK,
                                     params.RWORK,
                                     toCptr(params.IWORK), rv)
                 return rv[0]
