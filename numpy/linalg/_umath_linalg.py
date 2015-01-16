@@ -375,6 +375,8 @@ extern int
                nt.complex64: 'f2c_complex*', nt.complex128: 'f2c_doublecomplex*'}
     toCtypeA = {nt.int32: 'int[1]', nt.float32: 'float[1]', nt.float64: 'double[1]',
                nt.complex64: 'f2c_complex[1]', nt.complex128: 'f2c_doublecomplex[1]'}
+    copy_funcs = {nt.float32: getattr(lapack_lite, 'scopy'), nt.float64: getattr(lapack_lite, 'dcopy'),
+                  nt.complex64: getattr(lapack_lite, 'ccopy'), nt.complex128: getattr(lapack_lite, 'zcopy')}
 
     def toCptr(src):
         if src is None:
@@ -430,27 +432,35 @@ extern int
     base_vals['c']['nan'] = complex(float('nan'), float('nan'))
     base_vals['z'] = base_vals['c']
 
-    def lazy_init(*arg_names):
-        ''' Decorate a class __init__ by assigning all the args to self.arg_names
-        '''
-        def ret(init):
-            def __init__(self, *args):
-                for a, v in zip(arg_names, args):
-                    setattr(self, a, v)
-            return __init__
-        return ret
+    class Params(object):
+        params = ()
+        def __init__(self, *args):
+            for a, v in zip(self.params, args):
+                setattr(self, a, v)
 
-    class linearize_data(object):
+        def dump(self, name):
+            print >> sys.stderr, name
+            for p in self.params:
+                v = getattr(self, p)
+                try:
+                    rep = v[0]
+                except:
+                    print >> sys.stderr, '\t%10s: %r' %(p, v)
+                else:
+                    if isinstance(v, np.ndarray):
+                        print >> sys.stderr, '\t%10s: %r, %r' %(p, v.dtype, v.shape)
+                    else:
+                        print >> sys.stderr, '\t%10s: %r %r' %(p, v, rep)
+
+    class linearize_data(Params):
         ''' contains information about how to linearize in a local buffer
            a matrix so that it can be used by blas functions.
            All strides are specified in number of elements (similar to what blas
            expects) rather than nelem*sizeof(elem) like in numpy
         '''
-        @lazy_init('rows', 'columns', 'row_strides', 'column_strides')
-        def __init__(*args):
-            pass
+        params = ('rows', 'columns', 'row_strides', 'column_strides')
 
-    def linearize_matrix(dst, src, data, copy_func):
+    def linearize_matrix(dst, src, data):
         ''' in cpython numpy, dst, src are c-level pointers
             we (ab)use ndarrays instead
         '''
@@ -458,6 +468,7 @@ extern int
             raise ValueError('called with NULL input, should not happen')
         if src.dtype is not dst.dtype:
             raise ValueError('called with differing dtypes, should not happen')
+        copy_func = copy_funcs[src.dtype]
         psrc = toCptr(src)
         pdst = toCptr(dst)
         pcolumns = ffi.new('int[1]', [data.columns])
@@ -480,7 +491,7 @@ extern int
             psrc += data.row_strides / src.dtype.itemsize
             pdst += data.columns
 
-    def delinearize_matrix(dst, src, data, copy_func):
+    def delinearize_matrix(dst, src, data):
         ''' in cpython numpy, dst, src are c-level pointers
             we (ab)use ndarrays instead
         '''
@@ -488,6 +499,7 @@ extern int
             raise ValueError('called with NULL input, should not happen')
         if src.dtype is not dst.dtype:
             raise ValueError('called with differing dtypes, should not happen')
+        copy_func = copy_funcs[src.dtype]
         psrc = toCptr(src)
         pdst = toCptr(dst)
         pcolumns = ffi.new('int [1]', [data.columns])
@@ -553,7 +565,7 @@ extern int
             
             # swapped steps to get matrix in FORTRAN order
             data = linearize_data(m, m, in0.strides[1], in0.strides[0]) 
-            linearize_matrix(mbuffer, in0, data, getattr(lapack_lite, cblas_typ + 'copy'))
+            linearize_matrix(mbuffer, in0, data)
             sign, logdet = slogdet_single_element(m, mbuffer, pivot)
             return sign, logdet
 
@@ -602,11 +614,9 @@ extern int
     # --------------------------------------------------------------------------
     # Eigh family
 
-    class eigh_params(object):
-        @lazy_init('A', 'W', 'WORK', 'RWORK', 'IWORK', 'N', 'LWORK',
+    class eigh_params(Params):
+        params = ('A', 'W', 'WORK', 'RWORK', 'IWORK', 'N', 'LWORK',
                    'LRWORK', 'LIWORK', 'JOBZ', 'UPLO')
-        def __init__(*args):
-            pass
 
     def wrap_eigh_real(typ, cblas_typ):
         lapack_func = cblas_typ + 'syevd'
@@ -700,13 +710,12 @@ extern int
             eigval_out_ld = linearize_data(1, N, 0, out[0].strides[0])
             if 'V' == JOBZ:
                 eigvec_out_ld = linearize_data(N, N, out[1].strides[1], out[1].strides[0])
-            copy_func = getattr(lapack_lite, cblas_typ + 'copy')
-            linearize_matrix(params.A, in0, matrix_in_ld, copy_func)
+            linearize_matrix(params.A, in0, matrix_in_ld)
             not_ok = eigh_funcs[cblas_typ][call_func](params)
             if not_ok == 0:
-                delinearize_matrix(out[0], params.W, eigval_out_ld, copy_func)
+                delinearize_matrix(out[0], params.W, eigval_out_ld)
                 if 'V' == JOBZ:
-                    delinearize_matrix(out[1], params.A, eigvec_out_ld, copy_func)
+                    delinearize_matrix(out[1], params.A, eigvec_out_ld)
             else:
                 out[0].fill(base_vals[cblas_typ]['nan'])
                 if 'V' == JOBZ:
@@ -789,10 +798,8 @@ extern int
     # --------------------------------------------------------------------------
     # Solve family (includes inv)
 
-    class gesv_params(object):
-        @lazy_init('A', 'B', 'IPIV', 'N', 'NRHS', 'LDA', 'LDB')
-        def __init__(*args):
-            pass
+    class gesv_params(Params):
+        params = ('A', 'B', 'IPIV', 'N', 'NRHS', 'LDA', 'LDB')
 
     def wrap_solvers(typ, cblas_typ):
         def init_func(N, NRHS):
@@ -818,12 +825,11 @@ extern int
             a_in = linearize_data(n, n, inarg.strides[1], inarg.strides[0])
             b_in = linearize_data(nrhs, n, out0.strides[1], out0.strides[0])
             r_out = linearize_data(nrhs, n, out1.strides[1], out1.strides[0])
-            copy_func = getattr(lapack_lite, cblas_typ + 'copy')
-            linearize_matrix(params.A, inarg, a_in, copy_func) 
-            linearize_matrix(params.B, out0, b_in, copy_func) 
+            linearize_matrix(params.A, inarg, a_in) 
+            linearize_matrix(params.B, out0, b_in) 
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(out1, params.B, r_out, copy_func)
+                delinearize_matrix(out1, params.B, r_out)
             else:
                 error_occurred = 1
                 out1.fill(base_vals[cblas_typ]['nan'])
@@ -837,12 +843,11 @@ extern int
             a_in = linearize_data(n, n, inarg.strides[1], inarg.strides[0])
             b_in = linearize_data(nrhs, n, 1, out0.strides[0])
             r_out = linearize_data(nrhs, n, 1, out1.strides[0])
-            copy_func = getattr(lapack_lite, cblas_typ + 'copy')
-            linearize_matrix(params.A, inarg, a_in, copy_func) 
-            linearize_matrix(params.B, out0, b_in, copy_func) 
+            linearize_matrix(params.A, inarg, a_in) 
+            linearize_matrix(params.B, out0, b_in) 
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(out1, params.B, r_out, copy_func)
+                delinearize_matrix(out1, params.B, r_out)
             else:
                 error_occurred = 1
                 out1.fill(base_vals[cblas_typ]['nan'])
@@ -859,12 +864,11 @@ extern int
             params = init_func(n, n)
             a_in = linearize_data(n, n, inarg.strides[1], inarg.strides[0])
             r_out = linearize_data(n, n, outarg.strides[1], outarg.strides[0])
-            copy_func = getattr(lapack_lite, cblas_typ + 'copy')
-            linearize_matrix(params.A, inarg, a_in, copy_func) 
+            linearize_matrix(params.A, inarg, a_in) 
             identity_matrix(params.B)
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(outarg, params.B, r_out, copy_func)
+                delinearize_matrix(outarg, params.B, r_out)
             else:
                 error_occurred = 1
                 outarg.fill(base_vals[cblas_typ]['nan'])
@@ -914,10 +918,8 @@ extern int
 
     # --------------------------------------------------------------------------
     # Cholesky decomposition
-    class potr_params(object):
-        @lazy_init('A', 'N', 'LDA', 'UPLO')
-        def __init__(self, *args):
-            pass
+    class potr_params(Params):
+        params = ('A', 'N', 'LDA', 'UPLO')
 
     def wrap_cholesky(typ, cblas_typ):
         def init_func(UPLO, N):
@@ -939,11 +941,10 @@ extern int
             params = init_func(uplo, n)
             a_in = linearize_data(n, n, in0.strides[1], in0.strides[0])
             r_out = linearize_data(n, n, out0.strides[1], out0.strides[0])
-            copy_func = getattr(lapack_lite, cblas_typ + 'copy')
-            linearize_matrix(params.A, in0, a_in, copy_func) 
+            linearize_matrix(params.A, in0, a_in) 
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(out0, params.A, r_out, copy_func) 
+                delinearize_matrix(out0, params.A, r_out) 
             else:
                 error_occurred = 1
                 out0.fill(base_vals[cblas_typ]['nan'])
@@ -973,23 +974,9 @@ extern int
 
     # --------------------------------------------------------------------------
     # eig family
-    class geev_params_struct(object):
+    class geev_params_struct(Params):
         params = ('A', 'WR', 'WI', 'VLR', 'VRR', 'WORK', 'W', 'VL', 'VR', 'N',
                    'LDA', 'LDVL', 'LDVR', 'LWORK', 'JOBVL', 'JOBVR')
-        @lazy_init(*params)
-        def __init__(self, *args):
-            pass
-
-        def dump(self, name):
-            print >> sys.stderr, name
-            for p in self.params:
-                v = getattr(self, p)
-                if isinstance(v, np.ndarray):
-                    print >> sys.stderr, '\t%10s: %r, %r' %(p, v.dtype, v.shape)
-                elif isinstance(v, int):
-                    print >> sys.stderr, '\t%10s: %r' %(p, v)
-                else:
-                    print >> sys.stderr, '\t%10s: %r %r' %(p, v, v[0])
 
     def mk_complex_eigenvectors(c, r, i, n):
         ''' make the complex eigenvectors from the real array produced by sgeev/zgeev.
@@ -1147,18 +1134,17 @@ extern int
                 vr_out = linearize_data(n, n, 
                                         out[outcnt].strides[1],
                                         out[outcnt].strides[0])
-            copy_func = getattr(lapack_lite, cblas_typ + 'copy')
-            linearize_matrix(params.A, in0, a_in, copy_func)
+            linearize_matrix(params.A, in0, a_in)
             not_ok = geev_funcs[cblas_typ][call_func](params)
             if not_ok == 0:
                 geev_funcs[cblas_typ][process_results](params)
-                delinearize_matrix(out[0], params.W, w_out, copy_func) 
+                delinearize_matrix(out[0], params.W, w_out) 
                 outcnt = 1
                 if 'V' == JOBVL:
-                    delinearize_matrix(out[outcnt], params.VL, vl_out, copy_func)
+                    delinearize_matrix(out[outcnt], params.VL, vl_out)
                     outcnt += 1
                 if 'V' == JOBVR:
-                    delinearize_matrix(out[outcnt], params.VR, vr_out, copy_func)
+                    delinearize_matrix(out[outcnt], params.VR, vr_out)
             else:
                 error_occurred = 1;
                 for o in out:
@@ -1203,23 +1189,23 @@ extern int
 
     # --------------------------------------------------------------------------
     # SVD family of singular value decomposition
-    class gesdd_params(object):
+    class gesdd_params(Params):
         params = ('A', 'S', 'U', 'VT', 'WORK', 'RWORK', 'IWORK',
                   'M', 'N', 'LDA', 'LDU', 'LDVT', 'LWORK', 'JOBZ')
-        @lazy_init(*params)
-        def __init__(self, *args):
-            pass
 
         def dump(self, name):
             print >> sys.stderr, name
             for p in self.params:
                 v = getattr(self, p)
-                if isinstance(v, np.ndarray):
-                    print >> sys.stderr, '\t%10s: %r, %r' %(p, v.dtype, v.shape)
-                elif isinstance(v, int):
+                try:
+                    rep = v[0]
+                except:
                     print >> sys.stderr, '\t%10s: %r' %(p, v)
                 else:
-                    print >> sys.stderr, '\t%10s: %r %r' %(p, v, v[0])
+                    if isinstance(v, np.ndarray):
+                        print >> sys.stderr, '\t%10s: %r, %r' %(p, v.dtype, v.shape)
+                    else:
+                        print >> sys.stderr, '\t%10s: %r %r' %(p, v, rep)
     
     def compute_urows_vtcolumns(jobz, m, n):
         min_m_n = min(m, n)
@@ -1244,7 +1230,7 @@ extern int
             if u_size == 0:
                 u = None
             else:
-                u = np.empty([u_size], typ)
+                u = np.empty([u_size, m], typ)
             if vt_size == 0:
                 vt = None
                 pVt_column_count = ffi.new('int[1]', [1])
@@ -1264,11 +1250,11 @@ extern int
                     rwork_size = 7 * min_m_n
                 else:
                     rwork_size = 5 * min_m_n * min_m_n + 5*min_m_n
-                rwork = ffi.cast('void*', ffi.ffi.new('char[%d]' % rwork_size))
+                rwork = ffi.cast('void*', ffi.new('char[%d]' % rwork_size))
                 getattr(lapack_lite, lapack_func)(pjobz, pM, pN, toCptr(a), pM, toCptr(s),
                     toCptr(u), pM, toCptr(vt), pVt_column_count,
                     pWork_size_query, pDo_query, 
-                    toCPtr(rwork),
+                    rwork,
                     toCptr(iwork), rv)
             else:
                 rwork = None
@@ -1282,7 +1268,7 @@ extern int
             if rv[0] != 0:
                 return None
             work_count = ffi.new('int[1]', [int(pWork_size_query[0])])
-            work = ffi.cast('void*', ffi.new('char[%d]' % work_count[0]))
+            work = ffi.cast('void*', ffi.new('char[%d]' % (work_count[0] * typ.itemsize,)))
             return gesdd_params(a, s, u, vt, work, rwork, iwork, pM, pN, pM, pM,
                         pVt_column_count, work_count, pjobz)  
 
@@ -1326,16 +1312,15 @@ extern int
                 u_out = linearize_data(ucols, m, out[0].strides[1], out[0].strides[0])
                 s_out = linearize_data(1, min_m_n, 0, out[1].strides[0])
                 v_out = linearize_data(n, vrows, out[2].strides[1], out[2].strides[0])
-            copy_func = getattr(lapack_lite, cblas_typ + 'copy')
-            linearize_matrix(params.A, in0, a_in, copy_func)
+            linearize_matrix(params.A, in0, a_in)
             not_ok = call_func(params)
             if not_ok == 0:
                 if jobz == 'N':
-                    delinearize_matrix(out[0], params.S, s_out,copy_func)
+                    delinearize_matrix(out[0], params.S, s_out)
                 else:
-                    delinearize_matrix(out[0], params.U, u_out,copy_func)
-                    delinearize_matrix(out[1], params.S, s_out,copy_func)
-                    delinearize_matrix(out[2], params.VT, v_out,copy_func)
+                    delinearize_matrix(out[0], params.U, u_out)
+                    delinearize_matrix(out[1], params.S, s_out)
+                    delinearize_matrix(out[2], params.VT, v_out)
             else:
                 error_occurred = 1;
                 for o in out:
