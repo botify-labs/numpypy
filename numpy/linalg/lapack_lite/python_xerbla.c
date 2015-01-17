@@ -1,4 +1,3 @@
-#include "Python.h"
 #include "f2c.h"
 
 /*
@@ -18,6 +17,15 @@
   info: Number of the invalid parameter.
 */
 
+#ifdef _LAPACK_LITE_DLL
+#include <stdio.h>
+int xerbla_(char *srname, integer *info)
+{
+    fprintf(stderr, "%s %d\n", srname, *info);
+}
+
+#else
+#include "Python.h"
 int xerbla_(char *srname, integer *info)
 {
         const char* format = "On entry to %.*s" \
@@ -45,3 +53,4 @@ int xerbla_(char *srname, integer *info)
 
         return 0;
 }
+#endif

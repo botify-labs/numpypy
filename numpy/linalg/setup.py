@@ -59,8 +59,10 @@ def configuration(parent_package='',top_path=None):
         if not lapack_info:
             build_info = {}
             print("### Warning:  Using unoptimized lapack ###")
-            sources = ['lapack_litemodule.c'] + lapack_lite_src[:-1]
+            sources = lapack_lite_src[:-1]
             build_info['depends'] = sources
+            build_info['macros'] = [('_LAPACK_LITE_DLL', None)]
+
             config.add_shared_library('lapack_lite',
                          sources = sources,
                          build_info = build_info,

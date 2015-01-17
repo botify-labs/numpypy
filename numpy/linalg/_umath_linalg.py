@@ -43,20 +43,23 @@ if use_cffi:
     # where the shared object is located. Note that we need the lapack (high-level) interface,
     # they in turn call a low-level implementation maybe using blas or atlas.
     # This has not been tested on OSX
-    __C = None
+    _C = None
     from numpy.distutils import system_info
     # temporarily mess with environ
     env = os.environ.copy()
     if sys.platform == 'win32':
         ld_library_path = 'PATH'
+        so_suffix = 'dll'
     else:
         ld_library_path = 'LD_LIBRARY_PATH'
+        so_suffix = 'so'
     for lapack, prefix, suffix in [ \
                     ['openblas_lapack', '', '_'], 
                     ['lapack_mkl', '', '_' ],
                     ['lapack', '', '_'],
+                    ['lapack_lite', '', '_'],
                   ]:
-        si = getattr(system_info, lapack + '_info')()
+        si = getattr(system_info, 'lapack_info')()
         libs = si.get_lib_dirs()
         if len(libs) > 0:
             os.environ[ld_library_path] = os.pathsep.join(libs + [os.environ.get(ld_library_path, '')])
@@ -69,7 +72,8 @@ if use_cffi:
             pass
     os.environ = env
     if _C is None:
-        shared_name = os.path.abspath(os.path.dirname(__file__)) + '/' + prefix + 'lapack_lite' + suffix
+        shared_name = os.path.abspath(os.path.dirname(__file__)) + \
+                                      '/lapack_lite.' + so_suffix
         if not os.path.exists(shared_name):
             # cffi should support some canonical name formatting like 
             # distutils.ccompiler.library_filename()
