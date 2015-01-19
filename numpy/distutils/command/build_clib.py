@@ -157,8 +157,13 @@ class build_clib(old_build_clib):
         elif f_sources: source_languages.append('f77')
         build_info['source_languages'] = source_languages
 
-        lib_file = compiler.library_filename(lib_name,
+        if link == 'link_shared_lib':
+            lib_file = self.compiler.library_filename(lib_name, lib_type='shared',
                                              output_dir=self.build_clib)
+        else:
+            lib_file = compiler.library_filename(lib_name,
+                                             output_dir=self.build_clib)
+
         depends = sources + build_info.get('depends', [])
         if not (self.force or newer_group(depends, lib_file, 'newer')):
             log.debug("skipping '%s' library (up-to-date)", lib_name)

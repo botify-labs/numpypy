@@ -49,9 +49,11 @@ if use_cffi:
     env = os.environ.copy()
     if sys.platform == 'win32':
         ld_library_path = 'PATH'
+        so_prefix = ''
         so_suffix = 'dll'
     else:
         ld_library_path = 'LD_LIBRARY_PATH'
+        so_prefix = 'lib'
         so_suffix = 'so'
     for lapack, prefix, suffix in [ \
                     ['openblas_lapack', '', '_'], 
@@ -72,8 +74,8 @@ if use_cffi:
             pass
     os.environ = env
     if _C is None:
-        shared_name = os.path.abspath(os.path.dirname(__file__)) + \
-                                      '/lapack_lite.' + so_suffix
+        shared_name = os.path.abspath(os.path.dirname(__file__)) + '/' + \
+                            so_prefix + 'lapack_lite.' + so_suffix
         if not os.path.exists(shared_name):
             # cffi should support some canonical name formatting like 
             # distutils.ccompiler.library_filename()
@@ -312,19 +314,19 @@ extern double
 {pfx}ddot{sfx}(int *n,
             double *sx, int *incx,
             double *sy, int *incy);
-extern VOID
+extern void
 {pfx}cdotu{sfx}(f2c_complex *, int *, 
        f2c_complex *, int *, 
        f2c_complex *, int *);
-extern VOID
+extern void
 {pfx}zdotu{sfx}(f2c_doublecomplex * ret_val, int *n,
 	f2c_doublecomplex *zx, int *incx, 
     f2c_doublecomplex *zy, int *incy);
-extern VOID
+extern void
 {pfx}cdotc{sfx}(f2c_complex *, int *, 
        f2c_complex *, int *, 
        f2c_complex *, int *);
-extern VOID
+extern void
 {pfx}zdotc{sfx}(f2c_doublecomplex * ret_val, int *n,
 	f2c_doublecomplex *zx, int *incx, 
     f2c_doublecomplex *zy, int *incy);
@@ -472,6 +474,9 @@ extern int
             raise ValueError('called with NULL input, should not happen')
         if src.dtype is not dst.dtype:
             raise ValueError('called with differing dtypes, should not happen')
+        if len(src.shape) < 2:
+            dst[:] = src
+            return
         copy_func = copy_funcs[src.dtype]
         psrc = toCptr(src)
         pdst = toCptr(dst)
@@ -503,6 +508,9 @@ extern int
             raise ValueError('called with NULL input, should not happen')
         if src.dtype is not dst.dtype:
             raise ValueError('called with differing dtypes, should not happen')
+        if len(src.shape) < 2:
+            dst[:] = src
+            return
         copy_func = copy_funcs[src.dtype]
         psrc = toCptr(src)
         pdst = toCptr(dst)

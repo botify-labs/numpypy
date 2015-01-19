@@ -1,4 +1,3 @@
-#include "f2c.h"
 
 /*
   From the original manpage:
@@ -19,6 +18,7 @@
 
 #ifdef _LAPACK_LITE_DLL
 #include <stdio.h>
+#include "f2c.h"
 int xerbla_(char *srname, integer *info)
 {
     fprintf(stderr, "%s %d\n", srname, *info);
@@ -26,6 +26,7 @@ int xerbla_(char *srname, integer *info)
 
 #else
 #include "Python.h"
+#include "f2c.h"
 int xerbla_(char *srname, integer *info)
 {
         const char* format = "On entry to %.*s" \
