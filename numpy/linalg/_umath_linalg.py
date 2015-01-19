@@ -34,7 +34,7 @@ if use_cffi:
     from numpy.core.umath import frompyfunc
     __version__ = '0.1.4'
 
-    macros = {'sfx': '', 'pfx': ''}
+    macros = {'sfx': '_', 'pfx': ''}
     ffi = cffi.FFI()
 
 
@@ -304,7 +304,7 @@ extern int
              f2c_doublecomplex *sx, int *incx,
              f2c_doublecomplex *sy, int *incy);
 
-extern float
+extern double
 {pfx}sdot{sfx}(int *n,
             float *sx, int *incx,
             float *sy, int *incy);
@@ -312,22 +312,22 @@ extern double
 {pfx}ddot{sfx}(int *n,
             double *sx, int *incx,
             double *sy, int *incy);
-extern f2c_complex
-{pfx}cdotu{sfx}(int *n,
-             f2c_complex *sx, int *incx,
-             f2c_complex *sy, int *incy);
-extern f2c_doublecomplex
-{pfx}zdotu{sfx}(int *n,
-             f2c_doublecomplex *sx, int *incx,
-             f2c_doublecomplex *sy, int *incy);
-extern f2c_complex
-{pfx}cdotc{sfx}(int *n,
-             f2c_complex *sx, int *incx,
-             f2c_complex *sy, int *incy);
-extern f2c_doublecomplex
-{pfx}zdotc{sfx}(int *n,
-             f2c_doublecomplex *sx, int *incx,
-             f2c_doublecomplex *sy, int *incy);
+extern VOID
+{pfx}cdotu{sfx}(f2c_complex *, int *, 
+       f2c_complex *, int *, 
+       f2c_complex *, int *);
+extern VOID
+{pfx}zdotu{sfx}(f2c_doublecomplex * ret_val, int *n,
+	f2c_doublecomplex *zx, int *incx, 
+    f2c_doublecomplex *zy, int *incy);
+extern VOID
+{pfx}cdotc{sfx}(f2c_complex *, int *, 
+       f2c_complex *, int *, 
+       f2c_complex *, int *);
+extern VOID
+{pfx}zdotc{sfx}(f2c_doublecomplex * ret_val, int *n,
+	f2c_doublecomplex *zx, int *incx, 
+    f2c_doublecomplex *zy, int *incy);
 
 extern int
 {pfx}sgemm{sfx}(char *transa, char *transb,
