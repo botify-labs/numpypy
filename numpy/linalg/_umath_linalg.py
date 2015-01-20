@@ -80,9 +80,14 @@ if use_cffi:
             # cffi should support some canonical name formatting like 
             # distutils.ccompiler.library_filename()
             raise ValueError('could not find "%s", perhaps the name is slightly off' % shared_name)
-        _C = ffi.dlopen(shared_name)
-        warn('tuned lapack (openblas, atlas ...) not found, using lapack_lite')
+        try:
+            _C = ffi.dlopen(shared_name)
+            warn('tuned lapack (openblas, atlas ...) not found, using lapack_lite')
+        except:
+            warn("no lapack nor lapack_lite shared object available, will try cpyext version next")
+            use_cffi = False
 
+if use_cffi:
     ffi.cdef('''
 /*
  *                    LAPACK functions
@@ -458,15 +463,7 @@ extern int
                     else:
                         print >> sys.stderr, '\t%10s: %r %r' %(p, v, rep)
 
-    class linearize_data(Params):
-        ''' contains information about how to linearize in a local buffer
-           a matrix so that it can be used by blas functions.
-           All strides are specified in number of elements (similar to what blas
-           expects) rather than nelem*sizeof(elem) like in numpy
-        '''
-        params = ('rows', 'columns', 'row_strides', 'column_strides')
-
-    def linearize_matrix(dst, src, data):
+    def linearize_matrix(dst, src):
         ''' in cpython numpy, dst, src are c-level pointers
             we (ab)use ndarrays instead
         '''
@@ -477,62 +474,12 @@ extern int
         if len(src.shape) < 2:
             dst[:] = src
             return
-        copy_func = copy_funcs[src.dtype]
-        psrc = toCptr(src)
-        pdst = toCptr(dst)
-        pcolumns = ffi.new('int[1]', [data.columns])
-        pcolumn_strides = ffi.new('int[1]', [data.column_strides / src.dtype.itemsize])
-        pone = ffi.new('int[1]', [1])
-        for i in range(data.rows):
-            psrc_void = ffi.cast("void*", psrc)
-            pdst_void = ffi.cast("void*", pdst)
-            if data.column_strides > 0:
-                copy_func(pcolumns, psrc_void, pcolumn_strides, pdst_void, pone)
-            elif data.column_strides < 0:
-                copy_func(pcolumns, ff.cast("void*", psrc + (columns-1)*column_strides), 
-                     pcolumn_strides, pdst_void, pone)
-            else:
-                # Zero strides has undefined behavior in some BLAS
-                # implementations (e.g. OSX Accelerate), so do it
-                # manually
-                for j in range(columns):
-                    ffi.memcpy(pdst+j, psrc, src.dtype.itemsize)
-            psrc += data.row_strides / src.dtype.itemsize
-            pdst += data.columns
+        scrT = src.T
+        if any(srcT.shape != dst.shape):
+            raise ValueError('called with differing shapes, should not happen: %r != %r', (srtT.shape, dst.shape))
+        dst[:] = srcT
 
-    def delinearize_matrix(dst, src, data):
-        ''' in cpython numpy, dst, src are c-level pointers
-            we (ab)use ndarrays instead
-        '''
-        if src is None:
-            raise ValueError('called with NULL input, should not happen')
-        if src.dtype is not dst.dtype:
-            raise ValueError('called with differing dtypes, should not happen')
-        if len(src.shape) < 2:
-            dst[:] = src
-            return
-        copy_func = copy_funcs[src.dtype]
-        psrc = toCptr(src)
-        pdst = toCptr(dst)
-        pcolumns = ffi.new('int [1]', [data.columns])
-        pcolumn_strides = ffi.new('int[1]', [data.column_strides / src.dtype.itemsize])
-        pone = ffi.new('int[1]', [1])
-        for i in range(data.rows):
-            psrc_void = ffi.cast("void*", psrc)
-            pdst_void = ffi.cast("void*", pdst)
-            if data.column_strides > 0:
-                copy_func(pcolumns, psrc_void, pcolumn_strides, pdst_void, pone)
-            elif data.column_strides < 0:
-                copy_func(pcolumns, psrc_void, pcolumn_strides, 
-                     ffi.cast("void*", pdst+(columns-1)*column_strides) , pone)
-            else:
-                # Zero strides has undefined behavior in some BLAS
-                # implementations (e.g. OSX Accelerate), so do it
-                # manually
-                for j in range(columns):
-                    ffi.memcpy(pdst, psrc+columns-1, src.dtype.itemsize)
-            psrc += data.columns
-            pdst += data.row_strides / src.dtype.itemsize
+    delinearize_matrix = linearize_matrix
 
     # --------------------------------------------------------------------------
     # Determinants
