@@ -406,20 +406,24 @@ extern int
         npy_set_floatstatus_invalid = getattr(umath, 'set_floatstatus_invalid')
     except AttributeError:
         sh_obj = umath.__file__
-        try:
-            umath_so = ffi.dlopen(sh_obj)
-            if npy_clear_floatstatus is None:
-                npy_clear_floatstatus = getattr(umath_so, 'npy_clear_floatstatus')
-            if npy_set_floatstatus_invalid is None:
-                npy_set_floatstatus_invalid = getattr(umath_so, 'npy_set_floatstatus_invalid')
-        except OSError, AttributeError:
-            def return0(*args):
-                return 0
+        ext = os.path.splitext(sh_obj)[1]
+        if ext.startswith('.py'):
             warn('npy_clear_floatstatus, npy_set_floatstatus_invalid not found')
-            if npy_clear_floatstatus is None:
-                npy_clear_floatstatus = return0
-            if npy_set_floatstatus_invalid is None:
-                npy_clear_floatstatus = return0
+        else:
+            try:
+                umath_so = ffi.dlopen(sh_obj)
+                if npy_clear_floatstatus is None:
+                    npy_clear_floatstatus = getattr(umath_so, 'npy_clear_floatstatus')
+                if npy_set_floatstatus_invalid is None:
+                    npy_set_floatstatus_invalid = getattr(umath_so, 'npy_set_floatstatus_invalid')
+            except OSError, AttributeError:
+                warn('npy_clear_floatstatus, npy_set_floatstatus_invalid not found')
+        def return0(*args):
+            return 0
+        if npy_clear_floatstatus is None:
+            npy_clear_floatstatus = return0
+        if npy_set_floatstatus_invalid is None:
+            npy_clear_floatstatus = return0
     def get_fp_invalid_and_clear():
         return bool(npy_clear_floatstatus() & np.FPE_INVALID)
 
@@ -474,9 +478,9 @@ extern int
         if len(src.shape) < 2:
             dst[:] = src
             return
-        scrT = src.T
-        if any(srcT.shape != dst.shape):
-            raise ValueError('called with differing shapes, should not happen: %r != %r', (srtT.shape, dst.shape))
+        srcT = src.T
+        if srcT.shape != dst.shape:
+            raise ValueError('called with differing shapes, should not happen: %r != %r', (srcT.shape, dst.shape))
         dst[:] = srcT
 
     delinearize_matrix = linearize_matrix
@@ -597,8 +601,8 @@ extern int
                 return None
             lwork[0] = int(query_work_size[0])
             liwork[0] = query_iwork_size[0]
-            work = toCptr(np.empty([lwork[0]], dtype=typ))
-            iwork = toCptr(np.empty([liwork[0]], dtype='int32'))
+            work = np.empty([lwork[0]], dtype=typ)
+            iwork = np.empty([liwork[0]], dtype='int32')
             
             return eigh_params(a, w, work, None, iwork, pN, lwork, 0, liwork,
                                pJOBZ, pUPLO)
@@ -607,7 +611,8 @@ extern int
             rv = ffi.new('int[1]')
             getattr(lapack_lite, lapack_func)(params.JOBZ, params.UPLO, params.N,
                         toCptr(params.A), params.N, toCptr(params.W),
-                        params.WORK, params.LWORK, params.IWORK, params.LIWORK, rv)
+                        toCptr(params.WORK), params.LWORK, toCptr(params.IWORK),
+                        params.LIWORK, rv)
             return rv[0]
         return init_func, call_func
 
@@ -634,9 +639,9 @@ extern int
             lwork[0] = query_work_size[0]
             lrwork[0] = query_rwork_size[0]
             liwork[0] = query_iwork_size[0]
-            work = toCptr(np.empty([lwork[0]], dtype=typ))
-            rwork = toCptr(np.empty([lrwork[0]], dtype=basetyp))
-            iwork = toCptr(np.empty([liwork[0]], dtype='int32'))
+            work = np.empty([lwork[0]], dtype=typ)
+            rwork = np.empty([lrwork[0]], dtype=basetyp)
+            iwork = np.empty([liwork[0]], dtype='int32')
             
             return eigh_params(a, w, work, rwork, iwork, pN, lwork, lrwork,
                                liwork, pJOBZ, pUPLO)
@@ -645,8 +650,8 @@ extern int
             rv = ffi.new('int[1]')
             getattr(lapack_lite, lapack_func)(params.JOBZ, params.UPLO, params.N,
                         toCptr(params.A), params.N, toCptr(params.W),
-                        params.WORK, params.LWORK, params.RWORK, params.LRWORK,
-                        params.IWORK, paramw.LIWORK, rv)
+                        toCptr(params.WORK), params.LWORK, toCptr(params.RWORK),
+                        params.LRWORK, toCptr(params.IWORK), paramw.LIWORK, rv)
             return rv[0]
         return init_func, call_func
 
@@ -665,16 +670,12 @@ extern int
             params = eigh_funcs[cblas_typ][init_func](JOBZ, UPLO, N)
             if params is None:
                 return
-            matrix_in_ld = linearize_data(N, N, in0.strides[1], in0.strides[0])
-            eigval_out_ld = linearize_data(1, N, 0, out[0].strides[0])
-            if 'V' == JOBZ:
-                eigvec_out_ld = linearize_data(N, N, out[1].strides[1], out[1].strides[0])
-            linearize_matrix(params.A, in0, matrix_in_ld)
+            linearize_matrix(params.A, in0)
             not_ok = eigh_funcs[cblas_typ][call_func](params)
             if not_ok == 0:
-                delinearize_matrix(out[0], params.W, eigval_out_ld)
+                delinearize_matrix(out[0], params.W)
                 if 'V' == JOBZ:
-                    delinearize_matrix(out[1], params.A, eigvec_out_ld)
+                    delinearize_matrix(out[1], params.A)
             else:
                 out[0].fill(base_vals[cblas_typ]['nan'])
                 if 'V' == JOBZ:
@@ -1081,29 +1082,18 @@ extern int
             if params is None:
                 return
             n = in0.shape[0]
-            a_in = linearize_data(n, n, in0.strides[1], in0.strides[0])
-            w_out = linearize_data(1, n, 0, out[0].strides[0])
             outcnt = 1
-            if 'V' == JOBVL:
-                vl_out = linearize_data(n, n, 
-                                        out[outcnt].strides[1],
-                                        out[outcnt].strides[0])
-                outcnt += 1
-            if 'V' == JOBVR:
-                vr_out = linearize_data(n, n, 
-                                        out[outcnt].strides[1],
-                                        out[outcnt].strides[0])
-            linearize_matrix(params.A, in0, a_in)
+            linearize_matrix(params.A, in0)
             not_ok = geev_funcs[cblas_typ][call_func](params)
             if not_ok == 0:
                 geev_funcs[cblas_typ][process_results](params)
-                delinearize_matrix(out[0], params.W, w_out) 
+                delinearize_matrix(out[0], params.W) 
                 outcnt = 1
                 if 'V' == JOBVL:
-                    delinearize_matrix(out[outcnt], params.VL, vl_out)
+                    delinearize_matrix(out[outcnt], params.VL)
                     outcnt += 1
                 if 'V' == JOBVR:
-                    delinearize_matrix(out[outcnt], params.VR, vr_out)
+                    delinearize_matrix(out[outcnt], params.VR)
             else:
                 error_occurred = 1;
                 for o in out:
@@ -1170,7 +1160,7 @@ extern int
             u_size, vt_size = compute_urows_vtcolumns(jobz, m, n)
             if u_size < 0:
                 return None 
-            a = np.empty([m, n], typ)
+            a = np.empty([n, m], typ)
             s = np.empty([min_m_n], typ)
             if u_size == 0:
                 u = None
@@ -1189,7 +1179,7 @@ extern int
             pDo_query = ffi.new('int[1]', [-1])
             rv = ffi.new('int[1]')
             if realtyp is not None:
-                pWork_size_query = ffi.new(toCtypeA[typ])
+                pWork_size_query = ffi.new(toCtypeA[typ], [-1])
                 s = np.empty([min_m_n], realtyp)
                 if 'N'==jobz:
                     rwork_size = 7 * min_m_n
@@ -1215,7 +1205,7 @@ extern int
                 if rv[0] != 0:
                     return None
                 work_count = ffi.new('int[1]', [int(pWork_size_query[0])])
-            work = ffi.cast('void*', ffi.new('char[%d]' % (work_count[0] * typ.itemsize,)))
+            work = ffi.new('char[%d]' % (work_count[0] * typ.itemsize,))
             return gesdd_params(a, s, u, vt, work, rwork, iwork, pM, pN, pM, pM,
                         pVt_column_count, work_count, pjobz)  
 
@@ -1225,7 +1215,7 @@ extern int
                 getattr(lapack_lite, lapack_func)(params.JOBZ, params.M, params.N, toCptr(params.A),
                                     params.LDA, toCptr(params.S), 
                                     toCptr(params.U), params.LDU, toCptr(params.VT),
-                                    params.LDVT, params.WORK, params.LWORK,
+                                    params.LDVT, ffi.cast('void*', params.WORK), params.LWORK,
                                     toCptr(params.IWORK), rv)
                 return rv[0]
         else:
@@ -1246,28 +1236,15 @@ extern int
             if params is None:
                 return None
             min_m_n = min(m, n)
-            a_in = linearize_data(n, m, in0.strides[1], in0.strides[0])
-            if jobz == 'N':
-                s_out = linearize_data(1, min_m_n, 0, out[0].strides[0])
-            else:
-                if 'S' == jobz:
-                    ucols = min_m_n
-                    vrows = min_m_n
-                else:
-                    ucols = m
-                    vrows = n
-                u_out = linearize_data(ucols, m, out[0].strides[1], out[0].strides[0])
-                s_out = linearize_data(1, min_m_n, 0, out[1].strides[0])
-                v_out = linearize_data(n, vrows, out[2].strides[1], out[2].strides[0])
-            linearize_matrix(params.A, in0, a_in)
+            linearize_matrix(params.A, in0)
             not_ok = call_func(params)
             if not_ok == 0:
                 if jobz == 'N':
-                    delinearize_matrix(out[0], params.S, s_out)
+                    delinearize_matrix(out[0], params.S)
                 else:
-                    delinearize_matrix(out[0], params.U, u_out)
-                    delinearize_matrix(out[1], params.S, s_out)
-                    delinearize_matrix(out[2], params.VT, v_out)
+                    delinearize_matrix(out[0], params.U)
+                    delinearize_matrix(out[1], params.S)
+                    delinearize_matrix(out[2], params.VT)
             else:
                 error_occurred = 1;
                 for o in out:
