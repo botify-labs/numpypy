@@ -527,8 +527,7 @@ extern int
             pivot = np.empty(m, typ)
             
             # swapped steps to get matrix in FORTRAN order
-            data = linearize_data(m, m, in0.strides[1], in0.strides[0]) 
-            linearize_matrix(mbuffer, in0, data)
+            linearize_matrix(mbuffer, in0)
             sign, logdet = slogdet_single_element(m, mbuffer, pivot)
             return sign, logdet
 
@@ -542,7 +541,6 @@ extern int
             pivot = np.empty(m, typ)
         
             # swapped steps to get matrix in FORTRAN order
-            data = linearize_data(m, m, in0.strides[1], in0.strides[0]) 
             sign, logdet = slogdet_single_element(m, mbuffer, pivot)
             return logdet
         return slogdet, det
@@ -782,14 +780,11 @@ extern int
             n = inarg.shape[0]
             nrhs = inarg.shape[1]
             params = init_func(n, nrhs)
-            a_in = linearize_data(n, n, inarg.strides[1], inarg.strides[0])
-            b_in = linearize_data(nrhs, n, out0.strides[1], out0.strides[0])
-            r_out = linearize_data(nrhs, n, out1.strides[1], out1.strides[0])
-            linearize_matrix(params.A, inarg, a_in) 
-            linearize_matrix(params.B, out0, b_in) 
+            linearize_matrix(params.A, inarg) 
+            linearize_matrix(params.B, out0) 
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(out1, params.B, r_out)
+                delinearize_matrix(out1, params.B)
             else:
                 error_occurred = 1
                 out1.fill(base_vals[cblas_typ]['nan'])
@@ -800,14 +795,11 @@ extern int
             n = inarg.shape[0]
             nrhs = 1
             params = init_func(n, nrhs)
-            a_in = linearize_data(n, n, inarg.strides[1], inarg.strides[0])
-            b_in = linearize_data(nrhs, n, 1, out0.strides[0])
-            r_out = linearize_data(nrhs, n, 1, out1.strides[0])
-            linearize_matrix(params.A, inarg, a_in) 
-            linearize_matrix(params.B, out0, b_in) 
+            linearize_matrix(params.A, inarg) 
+            linearize_matrix(params.B, out0) 
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(out1, params.B, r_out)
+                delinearize_matrix(out1, params.B)
             else:
                 error_occurred = 1
                 out1.fill(base_vals[cblas_typ]['nan'])
@@ -822,13 +814,11 @@ extern int
             error_occurred = get_fp_invalid_and_clear()
             n = inarg.shape[0]
             params = init_func(n, n)
-            a_in = linearize_data(n, n, inarg.strides[1], inarg.strides[0])
-            r_out = linearize_data(n, n, outarg.strides[1], outarg.strides[0])
-            linearize_matrix(params.A, inarg, a_in) 
+            linearize_matrix(params.A, inarg) 
             identity_matrix(params.B)
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(outarg, params.B, r_out)
+                delinearize_matrix(outarg, params.B)
             else:
                 error_occurred = 1
                 outarg.fill(base_vals[cblas_typ]['nan'])
@@ -899,12 +889,10 @@ extern int
             n = inarg.shape[0]
             assert uplo == 'L'
             params = init_func(uplo, n)
-            a_in = linearize_data(n, n, in0.strides[1], in0.strides[0])
-            r_out = linearize_data(n, n, out0.strides[1], out0.strides[0])
-            linearize_matrix(params.A, in0, a_in) 
+            linearize_matrix(params.A, in0) 
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(out0, params.A, r_out) 
+                delinearize_matrix(out0, params.A) 
             else:
                 error_occurred = 1
                 out0.fill(base_vals[cblas_typ]['nan'])
