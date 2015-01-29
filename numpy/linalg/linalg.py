@@ -14,7 +14,7 @@ from __future__ import division, absolute_import, print_function
 __all__ = ['matrix_power', 'solve', 'tensorsolve', 'tensorinv', 'inv',
            'cholesky', 'eigvals', 'eigvalsh', 'pinv', 'slogdet', 'det',
            'svd', 'eig', 'eigh', 'lstsq', 'norm', 'qr', 'cond', 'matrix_rank',
-           'LinAlgError']
+           'LinAlgError', 'lapack_lite']
 
 import warnings
 
@@ -26,7 +26,12 @@ from numpy.core import (
     broadcast
     )
 from numpy.lib import triu, asfarray
-from numpy.linalg import lapack_lite, _umath_linalg
+from numpy.linalg import _umath_linalg
+try:
+    from numpy.linalg import lapack_lite
+except ImportError:
+    # is it the cffi version?
+    lapack_lite = getattr(_umath_linalg, 'lapack_lite', None)
 from numpy.matrixlib.defmatrix import matrix_power
 from numpy.compat import asbytes
 

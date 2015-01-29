@@ -58,7 +58,7 @@ def configuration(parent_package='',top_path=None):
                              'libraries': libs,
                              'depends': [join('mtrand', '*.h'),
                                         ],
-                             'define_macros': defs,
+                             'macros': defs,
                             }
                         )
     else:

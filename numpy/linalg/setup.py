@@ -38,12 +38,10 @@ def configuration(parent_package='',top_path=None):
         have_cffi = True
     except ImportError:
         have_cffi = False
-    # TODO replace these two modules with cffi equivalents
     build__umath_linalg_capi = True
-    if '__pypy__' in sys.builtin_module_names:
-        import _numpypy.umath
-        if 'frompyfunc' not in dir(_numpypy.umath):
-            build__umath_linalg_capi = False
+    if have_cffi and '__pypy__' in sys.builtin_module_names:
+        # pypy prefers cffi, cpython prefers capi
+        build__umath_linalg_capi = False
     if build__umath_linalg_capi:
         config.add_extension('lapack_lite',
                          sources = [get_lapack_lite_sources],
@@ -57,7 +55,21 @@ def configuration(parent_package='',top_path=None):
                          extra_info = lapack_info,
                          libraries = ['npymath']
                          )
+    else:
+        if not lapack_info:
+            build_info = {}
+            print("### Warning:  Using unoptimized lapack ###")
+            sources = lapack_lite_src[:-1]
+            build_info['depends'] = sources
+            build_info['macros'] = [('_LAPACK_LITE_DLL', None)]
 
+            config.add_shared_library('lapack_lite',
+                         sources = sources,
+                         build_info = build_info,
+                         )
+        else:
+            # We will use the lapack available on the platform
+            pass
     return config
 
 if __name__ == '__main__':
