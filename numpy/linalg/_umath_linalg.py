@@ -27,6 +27,7 @@ if use_cffi:
         pass
     nt = Dummy()
     nt.int32 = dtype('int32')
+    nt.int8 = dtype('int8')
     nt.float32 = dtype('float32')
     nt.float64 = dtype('float64')
     nt.complex64 = dtype('complex64')
@@ -383,7 +384,8 @@ extern int
     lapack_lite.shared_object = _C
 
     toCtypeP = {nt.int32: 'int*', nt.float32: 'float*', nt.float64: 'double*',
-               nt.complex64: 'f2c_complex*', nt.complex128: 'f2c_doublecomplex*'}
+               nt.complex64: 'f2c_complex*', nt.complex128: 'f2c_doublecomplex*',
+               nt.int8: 'char *'}
     toCtypeA = {nt.int32: 'int[1]', nt.float32: 'float[1]', nt.float64: 'double[1]',
                nt.complex64: 'f2c_complex[1]', nt.complex128: 'f2c_doublecomplex[1]'}
     copy_funcs = {nt.float32: getattr(lapack_lite, 'scopy'), nt.float64: getattr(lapack_lite, 'dcopy'),
@@ -1160,7 +1162,7 @@ extern int
             else:
                 vt = np.empty([n, vt_size], typ) 
                 pVt_column_count = ffi.new('int[1]', [vt_size])
-            iwork = np.empty([8, min_m_n], 'int32')
+            iwork = np.empty([16, min_m_n], 'int32')
             pN = ffi.new('int[1]', [n])
             pM = ffi.new('int[1]', [m])
             pjobz = ffi.new('char[1]', [jobz])
@@ -1175,11 +1177,11 @@ extern int
                     rwork_size = 7 * min_m_n
                 else:
                     rwork_size = 5 * min_m_n * min_m_n + 5*min_m_n
-                rwork = ffi.cast('void*', ffi.new('char[%d]' % rwork_size))
+                rwork = np.empty([rwork_size*8],'int8')
                 getattr(lapack_lite, lapack_func)(pjobz, pM, pN, toCptr(a), pM, toCptr(s),
                     toCptr(u), pM, toCptr(vt), pVt_column_count,
                     pWork_size_query, pDo_query, 
-                    rwork,
+                    toCptr(rwork),
                     toCptr(iwork), rv)
                 if rv[0] != 0:
                     return None
@@ -1215,7 +1217,7 @@ extern int
                                     params.LDA, toCptr(params.S),
                                     toCptr(params.U), params.LDU, toCptr(params.VT),
                                     params.LDVT, params.WORK, params.LWORK,
-                                    params.RWORK,
+                                    toCptr(params.RWORK),
                                     toCptr(params.IWORK), rv)
                 return rv[0]
 
