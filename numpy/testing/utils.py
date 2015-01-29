@@ -330,7 +330,7 @@ def assert_equal(actual,desired,err_msg='',verbose=True):
         pass
 
     # Explicitly use __eq__ for comparison, ticket #2552
-    if not (desired == actual):
+    if not (desired == actual or actual == desired):
         raise AssertionError(msg)
 
 def print_assert_equal(test_string, actual, desired):
