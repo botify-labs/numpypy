@@ -423,7 +423,7 @@ extern int
         if npy_clear_floatstatus is None:
             npy_clear_floatstatus = return0
         if npy_set_floatstatus_invalid is None:
-            npy_clear_floatstatus = return0
+            npy_set_floatstatus_invalid = return0
     def get_fp_invalid_and_clear():
         return bool(npy_clear_floatstatus() & np.FPE_INVALID)
 
@@ -1167,7 +1167,9 @@ extern int
             pDo_query = ffi.new('int[1]', [-1])
             rv = ffi.new('int[1]')
             if realtyp is not None:
-                pWork_size_query = ffi.new(toCtypeA[typ], [-1])
+                pWork_size_query = ffi.new(toCtypeA[typ])
+                pWork_size_query[0].r = -1
+                pWork_size_query[0].i =  0
                 s = np.empty([min_m_n], realtyp)
                 if 'N'==jobz:
                     rwork_size = 7 * min_m_n
