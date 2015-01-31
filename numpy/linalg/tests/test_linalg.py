@@ -1144,13 +1144,12 @@ def test_xerbla_override():
                 1, 1, 1, a,
                 0, # <- invalid value
                 a, a, 0, 0)
-        except ValueError as e:
             if "DORGQR parameter number 5" in str(e):
                 # success
                 os._exit(os.EX_OK)
-
-        # Did not abort, but our xerbla was not linked in.
-        os._exit(os.EX_CONFIG)
+        except:
+            # Did not abort, but our xerbla was not linked in.
+            os._exit(os.EX_CONFIG)
     else:
         # parent
         pid, status = os.wait()
