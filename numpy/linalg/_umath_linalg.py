@@ -388,8 +388,6 @@ extern int
                nt.int8: 'char *'}
     toCtypeA = {nt.int32: 'int[1]', nt.float32: 'float[1]', nt.float64: 'double[1]',
                nt.complex64: 'f2c_complex[1]', nt.complex128: 'f2c_doublecomplex[1]'}
-    copy_funcs = {nt.float32: getattr(lapack_lite, 'scopy'), nt.float64: getattr(lapack_lite, 'dcopy'),
-                  nt.complex64: getattr(lapack_lite, 'ccopy'), nt.complex128: getattr(lapack_lite, 'zcopy')}
 
     def toCptr(src):
         if src is None:
@@ -477,7 +475,7 @@ extern int
             raise ValueError('called with NULL input, should not happen')
         if src.dtype is not dst.dtype:
             raise ValueError('called with differing dtypes, should not happen')
-        if len(src.shape) < 2:
+        if len(dst.shape) < 2 or len(src.shape) < 2:
             dst[:] = src
             return
         srcT = src.T
@@ -767,7 +765,7 @@ extern int
             B = np.empty([N, NRHS], dtype = typ)
             ipiv = np.empty([N], dtype = nt.int32)
             pN = ffi.new('int[1]', [N])
-            pNRHS = ffi.new('int[1]', [N])
+            pNRHS = ffi.new('int[1]', [NRHS])
             return gesv_params(A, B, ipiv, pN, pNRHS, pN, pN)
 
         def call_func(params):
@@ -777,31 +775,31 @@ extern int
                                              toCptr(params.B), params.LDB, rv)
             return rv[0]
              
-        def solve(inarg, out0, out1):
+        def solve(in0, in1, out0):
             error_occurred = get_fp_invalid_and_clear()
-            n = inarg.shape[0]
-            nrhs = inarg.shape[1]
+            n = in0.shape[0]
+            nrhs = in0.shape[1]
             params = init_func(n, nrhs)
-            linearize_matrix(params.A, inarg) 
-            linearize_matrix(params.B, out0) 
+            linearize_matrix(params.A, in0) 
+            linearize_matrix(params.B, in1) 
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(out1, params.B)
+                delinearize_matrix(out0, params.B)
             else:
                 error_occurred = 1
                 out1.fill(base_vals[cblas_typ]['nan'])
             set_fp_invalid_or_clear(error_occurred);
               
-        def solve1(inarg, out0):
+        def solve1(in0, in1, out0):
             error_occurred = get_fp_invalid_and_clear()
-            n = inarg.shape[0]
+            n = in0.shape[0]
             nrhs = 1
             params = init_func(n, nrhs)
-            linearize_matrix(params.A, inarg) 
-            linearize_matrix(params.B, out0) 
+            linearize_matrix(params.A, in0) 
+            linearize_matrix(params.B, in1) 
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(out1, params.B)
+                delinearize_matrix(out0, params.B)
             else:
                 error_occurred = 1
                 out1.fill(base_vals[cblas_typ]['nan'])
