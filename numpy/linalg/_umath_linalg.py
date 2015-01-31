@@ -475,7 +475,7 @@ extern int
             raise ValueError('called with NULL input, should not happen')
         if src.dtype is not dst.dtype:
             raise ValueError('called with differing dtypes, should not happen')
-        if len(dst.shape) < 2 or len(src.shape) < 2:
+        if len(src.shape) < 2:
             dst[:] = src
             return
         srcT = src.T
@@ -729,7 +729,7 @@ extern int
                         "    \"(m,m)->(m),(m,m)\" \n",
                         )
 
-    eighvalsh_lo = frompyfunc([FLOAT_eigvalshlo, DOUBLE_eigvalshlo, CFLOAT_eigvalshlo, CDOUBLE_eigvalshlo],
+    eigvalsh_lo = frompyfunc([FLOAT_eigvalshlo, DOUBLE_eigvalshlo, CFLOAT_eigvalshlo, CDOUBLE_eigvalshlo],
                         1, 1, dtypes=[nt.float32, nt.float32,
                                        nt.float64, nt.float64,
                                        nt.complex64, nt.float32,
@@ -741,7 +741,7 @@ extern int
                         "    \"(m,m)->(m)\" \n",
                         )
 
-    eighvalsh_up = frompyfunc([FLOAT_eigvalshup, DOUBLE_eigvalshup, CFLOAT_eigvalshup, CDOUBLE_eigvalshup],
+    eigvalsh_up = frompyfunc([FLOAT_eigvalshup, DOUBLE_eigvalshup, CFLOAT_eigvalshup, CDOUBLE_eigvalshup],
                         1, 1, dtypes=[nt.float32, nt.float32,
                                        nt.float64, nt.float64,
                                        nt.complex64, nt.float32,
@@ -762,7 +762,10 @@ extern int
     def wrap_solvers(typ, cblas_typ):
         def init_func(N, NRHS):
             A = np.empty([N, N], dtype=typ)
-            B = np.empty([N, NRHS], dtype = typ)
+            if NRHS == 1:
+                B = np.empty([N], dtype = typ)
+            else:
+                B = np.empty([NRHS, N], dtype = typ)
             ipiv = np.empty([N], dtype = nt.int32)
             pN = ffi.new('int[1]', [N])
             pNRHS = ffi.new('int[1]', [NRHS])
@@ -778,7 +781,7 @@ extern int
         def solve(in0, in1, out0):
             error_occurred = get_fp_invalid_and_clear()
             n = in0.shape[0]
-            nrhs = in0.shape[1]
+            nrhs = in1.shape[1]
             params = init_func(n, nrhs)
             linearize_matrix(params.A, in0) 
             linearize_matrix(params.B, in1) 
@@ -834,8 +837,8 @@ extern int
     solve = frompyfunc([FLOAT_solve, DOUBLE_solve, CFLOAT_solve, CDOUBLE_solve],
                          2, 1, dtypes=[nt.float32, nt.float32, nt.float32,
                                        nt.float64, nt.float64, nt.float64,
-                                       nt.complex64, nt.float32, nt.float32,
-                                       nt.complex128, nt.float64, nt.float64],
+                                       nt.complex64, nt.complex64, nt.complex64,
+                                       nt.complex128, nt.complex128, nt.complex128],
                           signature='(m,m),(m,n)->(m,n)', name='solve', stack_inputs=True,
                           doc = "solve the system a x = b, on the last two dimensions, broadcast"\
                                 " to the rest. \n"\
@@ -846,8 +849,8 @@ extern int
     solve1 = frompyfunc([FLOAT_solve1, DOUBLE_solve1, CFLOAT_solve1, CDOUBLE_solve1],
                          2, 1, dtypes=[nt.float32, nt.float32, nt.float32,
                                        nt.float64, nt.float64, nt.float64,
-                                       nt.complex64, nt.float32, nt.float32,
-                                       nt.complex128, nt.float64, nt.float64],
+                                       nt.complex64, nt.complex64, nt.complex64,
+                                       nt.complex128, nt.complex128, nt.complex128],
                           signature='(m,m),(m)->(m)', name='solve1', stack_inputs=True,
                           doc = "solve the system a x = b, for b being a vector, broadcast in"\
                                 " the outer dimensions. \n"\
