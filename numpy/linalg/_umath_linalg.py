@@ -490,22 +490,24 @@ extern int
 
     def wrap_slogdet(typ, basetyp, cblas_typ):
         def slogdet_from_factored_diagonal(src, m, sign):
-            sign_acc = sign[0]
+            sign_acc = sign
             logdet_acc = base_vals[cblas_typ]['zero']
-            for i in range(m[0]):
+            for i in range(m):
                 abs_element = np.abs(src[i,i])
                 sign_element = src[i, i] / abs_element
                 sign_acc = sign_acc * sign_element
                 logdet_acc += np.log(abs_element)
             return sign_acc, logdet_acc    
 
-        def slogdet_single_element(m, src, pivots):
+        def slogdet_single_element(m, src, pivot):
             info = ffi.new('int[1]', [0])
-            getattr(lapack_lite, cblas_typ + 'getrf')(m, m, src, m, pivots, info)
+            pM = ffi.new('int[1]', [m])
+            getattr(lapack_lite, cblas_typ + 'getrf')(pM, pM, toCptr(src), pM, toCptr(pivot), info)
+            change_sign = 0
             if info[0] == 0:
-                for i in range(m[0]):
+                for i in range(m):
                     # fortran uses 1 based indexing
-                    change_sign += (pivots[i] != (i + 1))
+                    change_sign += (pivot[i] != (i + 1))
                 if change_sign % 2:
                     sign = base_vals[cblas_typ]['minus_one']
                 else:
@@ -514,7 +516,7 @@ extern int
             else: 
                 # if getrf fails, use - as sign and -inf as logdet
                 sign = base_vals[cblas_typ]['zero']
-                logdet = base_type(-float('inf'))
+                logdet = -float('inf')
             return sign, logdet
 
         def slogdet(in0):
@@ -524,7 +526,7 @@ extern int
             '''
             m = in0.shape[0]
             mbuffer = np.empty((m, m), typ)
-            pivot = np.empty(m, typ)
+            pivot = np.empty(m, nt.int32)
             
             # swapped steps to get matrix in FORTRAN order
             linearize_matrix(mbuffer, in0)
@@ -538,7 +540,7 @@ extern int
             '''
             m = in0.shape[0]
             mbuffer = np.empty((m, m), typ)
-            pivot = np.empty(m, typ)
+            pivot = np.empty(m, nt.int32)
         
             # swapped steps to get matrix in FORTRAN order
             sign, logdet = slogdet_single_element(m, mbuffer, pivot)
@@ -818,7 +820,10 @@ extern int
             n = inarg.shape[0]
             params = init_func(n, n)
             linearize_matrix(params.A, inarg) 
-            identity_matrix(params.B)
+            if params.B.size < 2:
+                params.B[:] = 1
+            else:
+                identity_matrix(params.B)
             not_ok = call_func(params)
             if not_ok == 0:
                 delinearize_matrix(outarg, params.B)
@@ -860,8 +865,8 @@ extern int
     inv = frompyfunc([FLOAT_inv, DOUBLE_inv, CFLOAT_inv, CDOUBLE_inv],
                          1, 1, dtypes=[nt.float32, nt.float32,
                                        nt.float64, nt.float64,
-                                       nt.complex64, nt.float32,
-                                       nt.complex128, nt.float64],
+                                       nt.complex64, nt.complex64,
+                                       nt.complex128, nt.complex128],
                           signature='(m,m)->(m,m)', name='inv', stack_inputs=True,
                   doc="compute the inverse of the last two dimensions and broadcast "\
                       " to the rest. \n"\
@@ -1022,7 +1027,8 @@ extern int
                 vr = np.empty([n, n], typ)
             else:
                 vr = None
-            work_size_query = ffi.new(toCtypeA[typ], [0])
+            work_size_query = ffi.new(toCtypeA[typ])
+            work_size_query[0].r = 0
             do_size_query = ffi.new('int[1]', [-1])
             rv = ffi.new('int[1]', [0])
             pN = ffi.new('int[1]', [n])
@@ -1031,16 +1037,16 @@ extern int
                                          pN, work_size_query, do_size_query, toCptr(rwork), rv)
             if rv[0] !=0:
                 return None
-            work_count = work_size_query[0][0]
-            work = np.empty([work_count ], typ)
+            work_count = ffi.new('int[1]', [int(work_size_query[0].r)])
+            work = np.empty([work_count[0]], typ)
             return geev_params_struct(a, rwork, None, None, None, work, w, vl, vr, 
-                                      pN, pN, pN, pN, work_count[0], jobvl, jobvr)
+                                      pN, pN, pN, pN, work_count, jobvl, jobvr)
 
         def call_func(params):
             rv = ffi.new('int[1]', [0])
             getattr(lapack_lite, cblas_typ + 'geev')(params.JOBVL, params.JOBVR, params.N,
                     toCptr(params.A), params.LDA, toCptr(params.W), 
-                    toCptr(params.VL), params.LDVL, toCptr(params.VR), params.LVDR,
+                    toCptr(params.VL), params.LDVL, toCptr(params.VR), params.LDVR,
                     toCptr(params.WORK), params.LWORK,
                     toCptr(params.WR), # actually RWORK
                     rv)
@@ -1117,7 +1123,7 @@ extern int
                             "    \"(m,m)->(m),(m,m)\" \n",
                      )
 
-    eigvals = frompyfunc([FLOAT_eig, DOUBLE_eig, CDOUBLE_eig],
+    eigvals = frompyfunc([FLOAT_eigvals, DOUBLE_eigvals, CDOUBLE_eigvals],
                       1, 1, dtypes=[nt.float32, nt.complex64,
                                     nt.float64, nt.complex128,
                                     nt.complex128, nt.complex128],
