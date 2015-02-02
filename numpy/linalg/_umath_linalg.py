@@ -540,11 +540,19 @@ extern int
             '''
             m = in0.shape[0]
             mbuffer = np.empty((m, m), typ)
+            linearize_matrix(mbuffer, in0)
             pivot = np.empty(m, nt.int32)
         
             # swapped steps to get matrix in FORTRAN order
             sign, logdet = slogdet_single_element(m, mbuffer, pivot)
-            return logdet
+            if cblas_typ == 'c' or cblas_typ == 'z':
+                raise NotImplementedError('cannot calc det(complex) yet')
+                tmp = complex(np.exp(logdet), 0)
+                retval = complex(sign.real * tmp.real - sign.imag * tmp.imag,
+                                 sign.real * tmp.imag + sign.imag * tmp.real)
+            else:
+                retval = sign * np.exp(logdet)
+            return retval
         return slogdet, det
  
     FLOAT_slogdet,   FLOAT_det   = wrap_slogdet(nt.float32,    nt.float32, 's')
