@@ -620,7 +620,7 @@ extern int
         lapack_func = cblas_typ + 'heevd'
         def init_func(JOBZ, UPLO, N):
             query_work_size = ffi.new(toCtypeA[typ])
-            query_rwork_size = ffi.new(toCtypeA[typ])
+            query_rwork_size = ffi.new(toCtypeA[basetyp])
             query_iwork_size = ffi.new('int[1]')
             info = ffi.new('int[1]')
             lwork = ffi.new('int[1]', [-1])
@@ -636,8 +636,8 @@ extern int
                      query_iwork_size, liwork, info)
             if info[0] != 0:
                 return None
-            lwork[0] = query_work_size[0]
-            lrwork[0] = query_rwork_size[0]
+            lwork[0] = int(query_work_size[0].r)
+            lrwork[0] = int(query_rwork_size[0])
             liwork[0] = query_iwork_size[0]
             work = np.empty([lwork[0]], dtype=typ)
             rwork = np.empty([lrwork[0]], dtype=basetyp)
@@ -651,7 +651,7 @@ extern int
             getattr(lapack_lite, lapack_func)(params.JOBZ, params.UPLO, params.N,
                         toCptr(params.A), params.N, toCptr(params.W),
                         toCptr(params.WORK), params.LWORK, toCptr(params.RWORK),
-                        params.LRWORK, toCptr(params.IWORK), paramw.LIWORK, rv)
+                        params.LRWORK, toCptr(params.IWORK), params.LIWORK, rv)
             return rv[0]
         return init_func, call_func
 
