@@ -17,7 +17,7 @@ if '__pypy__' in sys.builtin_module_names:
         use_cffi = False
 else:
     # Default on cpython is not to use cffi
-    use_cffi = False 
+    use_cffi = False
 
 if use_cffi:
     import numpy as np
@@ -57,7 +57,7 @@ if use_cffi:
         so_prefix = 'lib'
         so_suffix = 'so'
     for lapack, prefix, suffix in [ \
-                    ['openblas_lapack', '', '_'], 
+                    ['openblas_lapack', '', '_'],
                     ['lapack_mkl', '', '_' ],
                     ['lapack', '', '_'],
                     ['lapack_lite', '', '_'],
@@ -78,7 +78,7 @@ if use_cffi:
         shared_name = os.path.abspath(os.path.dirname(__file__)) + '/' + \
                             so_prefix + 'lapack_lite.' + so_suffix
         if not os.path.exists(shared_name):
-            # cffi should support some canonical name formatting like 
+            # cffi should support some canonical name formatting like
             # distutils.ccompiler.library_filename()
             raise ValueError('could not find "%s", perhaps the name is slightly off' % shared_name)
         try:
@@ -321,20 +321,20 @@ extern double
             double *sx, int *incx,
             double *sy, int *incy);
 extern void
-{pfx}cdotu{sfx}(f2c_complex *, int *, 
-       f2c_complex *, int *, 
+{pfx}cdotu{sfx}(f2c_complex *, int *,
+       f2c_complex *, int *,
        f2c_complex *, int *);
 extern void
 {pfx}zdotu{sfx}(f2c_doublecomplex * ret_val, int *n,
-	f2c_doublecomplex *zx, int *incx, 
+	f2c_doublecomplex *zx, int *incx,
     f2c_doublecomplex *zy, int *incy);
 extern void
-{pfx}cdotc{sfx}(f2c_complex *, int *, 
-       f2c_complex *, int *, 
+{pfx}cdotc{sfx}(f2c_complex *, int *,
+       f2c_complex *, int *,
        f2c_complex *, int *);
 extern void
 {pfx}zdotc{sfx}(f2c_doublecomplex * ret_val, int *n,
-	f2c_doublecomplex *zx, int *incx, 
+	f2c_doublecomplex *zx, int *incx,
     f2c_doublecomplex *zy, int *incy);
 
 extern int
@@ -371,7 +371,7 @@ extern int
              f2c_doublecomplex *c, int *ldc);
 
     '''.format(**macros))
-    
+
     lapack_lite = Dummy()
     for name in ['sgeev', 'dgeev', 'cgeev', 'zgeev', 'ssyevd', 'dsyevd',
                  'cheevd', 'zheevd', 'dgelsd', 'zgelsd', 'sgesv', 'dgesv', 'cgesv', 'zgesv',
@@ -480,6 +480,7 @@ extern int
             return
         srcT = src.T
         if srcT.shape != dst.shape:
+            import pdb;pdb.set_trace()
             raise ValueError('called with differing shapes, should not happen: %r != %r', (srcT.shape, dst.shape))
         dst[:] = srcT
 
@@ -497,7 +498,7 @@ extern int
                 sign_element = src[i, i] / abs_element
                 sign_acc = sign_acc * sign_element
                 logdet_acc += np.log(abs_element)
-            return sign_acc, logdet_acc    
+            return sign_acc, logdet_acc
 
         def slogdet_single_element(m, src, pivot):
             info = ffi.new('int[1]', [0])
@@ -513,7 +514,7 @@ extern int
                 else:
                     sign = base_vals[cblas_typ]['one']
                 sign, logdet = slogdet_from_factored_diagonal(src, m, sign)
-            else: 
+            else:
                 # if getrf fails, use - as sign and -inf as logdet
                 sign = base_vals[cblas_typ]['zero']
                 logdet = -float('inf')
@@ -527,7 +528,7 @@ extern int
             m = in0.shape[0]
             mbuffer = np.empty((m, m), typ)
             pivot = np.empty(m, nt.int32)
-            
+
             # swapped steps to get matrix in FORTRAN order
             linearize_matrix(mbuffer, in0)
             sign, logdet = slogdet_single_element(m, mbuffer, pivot)
@@ -542,7 +543,7 @@ extern int
             mbuffer = np.empty((m, m), typ)
             linearize_matrix(mbuffer, in0)
             pivot = np.empty(m, nt.int32)
-        
+
             # swapped steps to get matrix in FORTRAN order
             sign, logdet = slogdet_single_element(m, mbuffer, pivot)
             if cblas_typ == 'c' or cblas_typ == 'z':
@@ -554,7 +555,7 @@ extern int
                 retval = sign * np.exp(logdet)
             return retval
         return slogdet, det
- 
+
     FLOAT_slogdet,   FLOAT_det   = wrap_slogdet(nt.float32,    nt.float32, 's')
     DOUBLE_slogdet,  DOUBLE_det  = wrap_slogdet(nt.float64,    nt.float64, 'd')
     CFLOAT_slogdet,  CFLOAT_det  = wrap_slogdet(nt.complex64,  nt.float32, 'c')
@@ -603,7 +604,7 @@ extern int
             pJOBZ = ffi.new('char[1]', [JOBZ])
             pUPLO = ffi.new('char[1]', [UPLO])
             getattr(lapack_lite, lapack_func)(pJOBZ, pUPLO, pN, toCptr(a), pN, toCptr(w),
-                     query_work_size, lwork, 
+                     query_work_size, lwork,
                      query_iwork_size, liwork, info)
             if info[0] != 0:
                 return None
@@ -611,7 +612,7 @@ extern int
             liwork[0] = query_iwork_size[0]
             work = np.empty([lwork[0]], dtype=typ)
             iwork = np.empty([liwork[0]], dtype='int32')
-            
+
             return eigh_params(a, w, work, None, iwork, pN, lwork, 0, liwork,
                                pJOBZ, pUPLO)
 
@@ -650,7 +651,7 @@ extern int
             work = np.empty([lwork[0]], dtype=typ)
             rwork = np.empty([lrwork[0]], dtype=basetyp)
             iwork = np.empty([liwork[0]], dtype='int32')
-            
+
             return eigh_params(a, w, work, rwork, iwork, pN, lwork, lrwork,
                                liwork, pJOBZ, pUPLO)
 
@@ -712,7 +713,7 @@ extern int
                                                     wrap_eigh(nt.complex64, 'c')
     CDOUBLE_eigh_lo, CDOUBLE_eigh_up, CDOUBLE_eigvalshlo, CDOUBLE_eigvalshup = \
                                                     wrap_eigh(nt.complex128, 'z')
-                
+
     eigh_lo = frompyfunc([FLOAT_eigh_lo, DOUBLE_eigh_lo, CFLOAT_eigh_lo, CDOUBLE_eigh_lo],
                         1, 2, dtypes=[nt.float32, nt.float32, nt.float32,
                                        nt.float64, nt.float64, nt.float64,
@@ -787,14 +788,14 @@ extern int
                                              params.LDA, toCptr(params.IPIV),
                                              toCptr(params.B), params.LDB, rv)
             return rv[0]
-             
+
         def solve(in0, in1, out0):
             error_occurred = get_fp_invalid_and_clear()
             n = in0.shape[0]
             nrhs = in1.shape[1]
             params = init_func(n, nrhs)
-            linearize_matrix(params.A, in0) 
-            linearize_matrix(params.B, in1) 
+            linearize_matrix(params.A, in0)
+            linearize_matrix(params.B, in1)
             not_ok = call_func(params)
             if not_ok == 0:
                 delinearize_matrix(out0, params.B)
@@ -802,14 +803,14 @@ extern int
                 error_occurred = 1
                 out1.fill(base_vals[cblas_typ]['nan'])
             set_fp_invalid_or_clear(error_occurred);
-              
+
         def solve1(in0, in1, out0):
             error_occurred = get_fp_invalid_and_clear()
             n = in0.shape[0]
             nrhs = 1
             params = init_func(n, nrhs)
-            linearize_matrix(params.A, in0) 
-            linearize_matrix(params.B, in1) 
+            linearize_matrix(params.A, in0)
+            linearize_matrix(params.B, in1)
             not_ok = call_func(params)
             if not_ok == 0:
                 delinearize_matrix(out0, params.B)
@@ -822,12 +823,12 @@ extern int
             a[:] = base_vals[cblas_typ]['zero']
             for i in range(a.shape[0]):
                 a[i,i] = base_vals[cblas_typ]['one']
-            
+
         def inv(inarg, outarg):
             error_occurred = get_fp_invalid_and_clear()
             n = inarg.shape[0]
             params = init_func(n, n)
-            linearize_matrix(params.A, inarg) 
+            linearize_matrix(params.A, inarg)
             if params.B.size < 2:
                 params.B[:] = 1
             else:
@@ -905,10 +906,10 @@ extern int
             n = inarg.shape[0]
             assert uplo == 'L'
             params = init_func(uplo, n)
-            linearize_matrix(params.A, in0) 
+            linearize_matrix(params.A, in0)
             not_ok = call_func(params)
             if not_ok == 0:
-                delinearize_matrix(out0, params.A) 
+                delinearize_matrix(out0, params.A)
             else:
                 error_occurred = 1
                 out0.fill(base_vals[cblas_typ]['nan'])
@@ -995,13 +996,13 @@ extern int
                 return None
             work_count = ffi.new('int[1]', [int(work_size_query[0])])
             work = np.empty([work_count[0] / 2], typ)
-            return geev_params_struct(a, wr, wi, vlr, vrr, work, w, vl, vr, 
+            return geev_params_struct(a, wr, wi, vlr, vrr, work, w, vl, vr,
                                       pN, pN, pN, pN, work_count, jobvl, jobvr)
 
         def call_func(params):
             rv = ffi.new('int[1]', [0])
             getattr(lapack_lite, cblas_typ + 'geev')(params.JOBVL, params.JOBVR, params.N,
-                    toCptr(params.A), params.LDA, toCptr(params.WR), toCptr(params.WI), 
+                    toCptr(params.A), params.LDA, toCptr(params.WR), toCptr(params.WI),
                     toCptr(params.VLR), params.LDVL, toCptr(params.VRR),
                     params.LDVR, toCptr(params.WORK), params.LWORK, rv)
             return rv[0]
@@ -1047,13 +1048,13 @@ extern int
                 return None
             work_count = ffi.new('int[1]', [int(work_size_query[0].r)])
             work = np.empty([work_count[0]], typ)
-            return geev_params_struct(a, rwork, None, None, None, work, w, vl, vr, 
+            return geev_params_struct(a, rwork, None, None, None, work, w, vl, vr,
                                       pN, pN, pN, pN, work_count, jobvl, jobvr)
 
         def call_func(params):
             rv = ffi.new('int[1]', [0])
             getattr(lapack_lite, cblas_typ + 'geev')(params.JOBVL, params.JOBVR, params.N,
-                    toCptr(params.A), params.LDA, toCptr(params.W), 
+                    toCptr(params.A), params.LDA, toCptr(params.W),
                     toCptr(params.VL), params.LDVL, toCptr(params.VR), params.LDVR,
                     toCptr(params.WORK), params.LWORK,
                     toCptr(params.WR), # actually RWORK
@@ -1092,7 +1093,7 @@ extern int
             not_ok = geev_funcs[cblas_typ][call_func](params)
             if not_ok == 0:
                 geev_funcs[cblas_typ][process_results](params)
-                delinearize_matrix(out[0], params.W) 
+                delinearize_matrix(out[0], params.W)
                 outcnt = 1
                 if 'V' == JOBVL:
                     delinearize_matrix(out[outcnt], params.VL)
@@ -1157,14 +1158,14 @@ extern int
             return min_m_n, min_m_n
         else:
             return -1, -1
-        
+
     def wrap_gesdd(typ, realtyp, cblas_typ):
         lapack_func = cblas_typ + 'gesdd'
         def init_func(jobz, m, n):
             min_m_n = min(m, n)
             u_size, vt_size = compute_urows_vtcolumns(jobz, m, n)
             if u_size < 0:
-                return None 
+                return None
             a = np.empty([n, m], typ)
             s = np.empty([min_m_n], typ)
             if u_size == 0:
@@ -1175,7 +1176,7 @@ extern int
                 vt = None
                 pVt_column_count = ffi.new('int[1]', [1])
             else:
-                vt = np.empty([n, vt_size], typ) 
+                vt = np.empty([n, vt_size], typ)
                 pVt_column_count = ffi.new('int[1]', [vt_size])
             iwork = np.empty([16, min_m_n], 'int32')
             pN = ffi.new('int[1]', [n])
@@ -1195,7 +1196,7 @@ extern int
                 rwork = np.empty([rwork_size*8],'int8')
                 getattr(lapack_lite, lapack_func)(pjobz, pM, pN, toCptr(a), pM, toCptr(s),
                     toCptr(u), pM, toCptr(vt), pVt_column_count,
-                    pWork_size_query, pDo_query, 
+                    pWork_size_query, pDo_query,
                     toCptr(rwork),
                     toCptr(iwork), rv)
                 if rv[0] != 0:
@@ -1207,20 +1208,20 @@ extern int
                 pWork_size_query = ffi.new(toCtypeA[typ])
                 getattr(lapack_lite, lapack_func)(pjobz, pM, pN, toCptr(a), pM, toCptr(s),
                     toCptr(u), pM, toCptr(vt), pVt_column_count,
-                    pWork_size_query, pDo_query, 
+                    pWork_size_query, pDo_query,
                     toCptr(iwork), rv)
                 if rv[0] != 0:
                     return None
                 work_count = ffi.new('int[1]', [int(pWork_size_query[0])])
             work = ffi.new('char[%d]' % (work_count[0] * typ.itemsize,))
             return gesdd_params(a, s, u, vt, work, rwork, iwork, pM, pN, pM, pM,
-                        pVt_column_count, work_count, pjobz)  
+                        pVt_column_count, work_count, pjobz)
 
         if cblas_typ == 's' or cblas_typ == 'd':
             def call_func(params):
                 rv = ffi.new('int[1]')
                 getattr(lapack_lite, lapack_func)(params.JOBZ, params.M, params.N, toCptr(params.A),
-                                    params.LDA, toCptr(params.S), 
+                                    params.LDA, toCptr(params.S),
                                     toCptr(params.U), params.LDU, toCptr(params.VT),
                                     params.LDVT, ffi.cast('void*', params.WORK), params.LWORK,
                                     toCptr(params.IWORK), rv)
@@ -1259,13 +1260,13 @@ extern int
             set_fp_invalid_or_clear(error_occurred)
 
         def svd_N(*args):
-            return svd('N', *args) 
+            return svd('N', *args)
 
         def svd_S(*args):
-            return svd('S', *args) 
+            return svd('S', *args)
 
         def svd_A(*args):
-            return svd('A', *args) 
+            return svd('A', *args)
 
         return svd_N, svd_S, svd_A
 
@@ -1329,7 +1330,7 @@ extern int
                      )
 
     # --------------------------------------------------------------------------
-  
+
 else:
     try:
         from _umath_linalg_capi import *
