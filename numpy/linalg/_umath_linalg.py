@@ -3,33 +3,40 @@
 # of the pypy extended frompyfunc, which removes the need for INIT_OUTER_LOOP*
 from warnings import warn
 import sys, os
-import lapack_lite
+import lapack_lite # either a cffi version or a cextension module
 
 try:
     import cffi
+    ffi = lapack_lite.ffi
     use_cffi = True
 except ImportError:
     use_cffi = False
-
+except AttributeError:
+    use_cffi = False
 
 if '__pypy__' in sys.builtin_module_names:
     import _numpypy.umath
     if 'frompyfunc' not in dir(_numpypy.umath):
         use_cffi = False
 else:
-    # Default on cpython is not to use cffi
+    # since we use extended frompyfunc(),
+    # skip the cffi stuff
     use_cffi = False
 
 if use_cffi:
-    import numpy as np
-    # dtype has not been imported yet
-    from numpy.core.multiarray import dtype
-    ffi = lapack_lite.ffi
+    # lapack_lite already imported the c functions from
+    # somewhere (lapack_lite compiled shared object or blas,
+    # but the name of the function may be a bit different.
+    # XXX cache this instead of looking up each call
     def get_c_func(blas_ch='', name=''):
         name = blas_ch + lapack_lite.macros['pfx'] + name + lapack_lite.macros['sfx']
         return getattr(lapack_lite._C, name)
 
 
+    import numpy as np
+
+    # dtype has not been imported yet. Fake it.
+    from numpy.core.multiarray import dtype
     class Dummy(object):
         pass
     nt = Dummy()
@@ -39,6 +46,7 @@ if use_cffi:
     nt.float64 = dtype('float64')
     nt.complex64 = dtype('complex64')
     nt.complex128 = dtype('complex128')
+
     from numpy.core.umath import frompyfunc
     __version__ = '0.1.4'
 

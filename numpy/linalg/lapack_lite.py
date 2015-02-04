@@ -1,6 +1,6 @@
 # A CFFI version of numpy/linalg/lapack_module.c
 import sys, os
-
+import warnings
 try:
     import cffi
     use_cffi = True
@@ -71,13 +71,15 @@ if use_cffi:
             raise ValueError('could not find "%s", perhaps the name is slightly off' % shared_name)
         try:
             _C = ffi.dlopen(shared_name)
-            warn('tuned lapack (openblas, atlas ...) not found, using lapack_lite')
+            warnings.warn('tuned lapack (openblas, atlas ...) not found, using lapack_lite')
         except:
-            warn("no lapack nor lapack_lite shared object available, will try cpyext version next")
+            warnings.warn("no lapack nor lapack_lite shared object available, will try cpyext version next")
             use_cffi = False
 
-if use_cffi:
-    ffi.cdef('''
+if not use_cffi:
+    raise NotImplementedError("numpy installation failure: no lapack_lite compiled python module and no lapack shared object")
+
+ffi.cdef('''
 /*
  *                    LAPACK functions
  */
@@ -358,70 +360,77 @@ extern int
              f2c_doublecomplex *beta,
              f2c_doublecomplex *c, int *ldc);
 
-    '''.format(**macros))
+'''.format(**macros))
 
-    shared_object = Dummy()
+'''
+Create a shared_object which maps the bare name to the one with pfx, sfx
+'''
 
-    for name in ['sgeev', 'dgeev', 'cgeev', 'zgeev', 'ssyevd', 'dsyevd',
-                 'cheevd', 'zheevd', 'dgelsd', 'zgelsd', 'sgesv', 'dgesv', 'cgesv', 'zgesv',
-                 'sgetrf', 'dgetrf', 'cgetrf', 'zgetrf', 'spotrf', 'dpotrf', 'cpotrf', 'zpotrf',
-                 'sgesdd', 'dgesdd', 'cgesdd', 'zgesdd', 'spotrs', 'dpotrs', 'cpotrs', 'zpotrs',
-                 'spotri', 'dpotri', 'cpotri', 'zpotri', 'scopy', 'dcopy', 'ccopy', 'zcopy',
-                 'sdot', 'ddot', 'cdotu', 'zdotu', 'cdotc', 'zdotc',
-                 'sgemm', 'dgemm', 'cgemm', 'zgemm']:
-        setattr(shared_object, name, getattr(_C, macros['pfx'] + name + macros['sfx']))
+shared_object = Dummy()
 
-    toCtypeP = {nt.int32: 'int*', nt.float32: 'float*', nt.float64: 'double*',
-               nt.complex64: 'f2c_complex*', nt.complex128: 'f2c_doublecomplex*',
-               nt.int8: 'char *'}
-    toCtypeA = {nt.int32: 'int[1]', nt.float32: 'float[1]', nt.float64: 'double[1]',
-               nt.complex64: 'f2c_complex[1]', nt.complex128: 'f2c_doublecomplex[1]'}
+for name in ['sgeev', 'dgeev', 'cgeev', 'zgeev', 'ssyevd', 'dsyevd',
+             'cheevd', 'zheevd', 'dgelsd', 'zgelsd', 'sgesv', 'dgesv', 'cgesv', 'zgesv',
+             'sgetrf', 'dgetrf', 'cgetrf', 'zgetrf', 'spotrf', 'dpotrf', 'cpotrf', 'zpotrf',
+             'sgesdd', 'dgesdd', 'cgesdd', 'zgesdd', 'spotrs', 'dpotrs', 'cpotrs', 'zpotrs',
+             'spotri', 'dpotri', 'cpotri', 'zpotri', 'scopy', 'dcopy', 'ccopy', 'zcopy',
+             'sdot', 'ddot', 'cdotu', 'zdotu', 'cdotc', 'zdotc',
+             'sgemm', 'dgemm', 'cgemm', 'zgemm']:
+    setattr(shared_object, name, getattr(_C, macros['pfx'] + name + macros['sfx']))
 
-    def toCptr(src):
-        if src is None:
-            return ffi.cast('void*', 0)
-        pData = src.__array_interface__['data'][0]
-        return ffi.cast(toCtypeP[src.dtype], pData)
+'''
+Since numpy expects to be able to call these functions with python objects,
+create a mapping mechanism: 
+  ndarray -> equivalent pointer to its data based on dtype
+  numpy scalar -> equivalent pointer based on ffi.cast
+  ffi.CData -> ready to be called
+  arbitrary cpython type -> use ffi.new to create a pointer to a type
+                            determined from the function signature
+'''
 
-    def convert_arg(inarg, ffitype):
-        '''
-        try to convert the inarg to an appropriate c pointer
-        '''
-        if isinstance(inarg, np.ndarray):
-            return toCptr(inarg)
-        elif type(inarg) in toCtypeA:
-            return ffi.cast(toCtypeA[inarg], inarg)
-        elif isinstance(inarg, ffi.CData):
-            return inarg
-        # Hope for the best...
-        ctyp_p = ffi.getctype(ffitype)
-        ctyp = ctyp_p[:-2]
-        return ffi.new( ctyp + '[1]', [inarg])
+toCtypeP = {nt.int32: 'int*', nt.float32: 'float*', nt.float64: 'double*',
+           nt.complex64: 'f2c_complex*', nt.complex128: 'f2c_doublecomplex*',
+           nt.int8: 'char *'}
+toCtypeA = {nt.int32: 'int[1]', nt.float32: 'float[1]', nt.float64: 'double[1]',
+           nt.complex64: 'f2c_complex[1]', nt.complex128: 'f2c_doublecomplex[1]'}
 
-    def call_func(name):
-        def call_with_convert(*args):
-            func = getattr(shared_object, name)
-            fargs = ffi.typeof(func).args
-            converted_args = [convert_arg(a,b) for a,b in zip(args, fargs)]
-            res = func(*converted_args)
-            retval = {'info':converted_args[-1][0]}
-            if 'gelsd' in name:
-                retval['rank'] = converted_args[9][0]
-            return retval
-        return call_with_convert
-else:
-    import imp
-    try:
-        shared_object = imp.load_dynamic('_lapack_lite', os.dirname(__file__) + '/lapack_lite.' + suffix)
-    except ImportError:
-        shared_object = Dummy()
-    def call_func(name):
-        def call_with_convert(*args):
-            return getattr(shared_object, name)(*args)
-        return call_with_convert
+def toCptr(src):
+    if src is None:
+        return ffi.cast('void*', 0)
+    pData = src.__array_interface__['data'][0]
+    return ffi.cast(toCtypeP[src.dtype], pData)
+
+def convert_arg(inarg, ffitype):
+    '''
+    try to convert the inarg to an appropriate c pointer
+    '''
+    if isinstance(inarg, np.ndarray):
+        return toCptr(inarg)
+    elif type(inarg) in toCtypeA:
+        return ffi.cast(toCtypeA[inarg], inarg)
+    elif isinstance(inarg, ffi.CData):
+        return inarg
+    # Hope for the best...
+    ctyp_p = ffi.getctype(ffitype)
+    ctyp = ctyp_p[:-2]
+    return ffi.new( ctyp + '[1]', [inarg])
+
+def call_func(name):
+    def call_with_convert(*args):
+        func = getattr(shared_object, name)
+        fargs = ffi.typeof(func).args
+        converted_args = [convert_arg(a,b) for a,b in zip(args, fargs)]
+        res = func(*converted_args)
+        retval = {'info':converted_args[-1][0]}
+        # numpy expects a dictionary
+        if 'gelsd' in name:
+            # special case, the rank argument is returned as well
+            retval['rank'] = converted_args[9][0]
+        return retval
+    return call_with_convert
 
 def not_implemented(*args):
     raise NotImplementedError('function not found, does lapack_lite object exist?')
+
 for name in ['sgeev', 'dgeev', 'cgeev', 'zgeev', 'ssyevd', 'dsyevd', 'cheevd',
          'zheevd', 'dgelsd', 'zgelsd', 'sgesv', 'dgesv', 'cgesv', 'zgesv',
          'sgetrf', 'dgetrf', 'cgetrf', 'zgetrf', 'spotrf', 'dpotrf', 'cpotrf',
