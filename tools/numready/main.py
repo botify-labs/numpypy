@@ -106,7 +106,7 @@ def main(argv):
         print '       path-to-cpython-with-numpy defaults to "/usr/bin/python"\n'
         return 
     if len(argv) < 4:
-        cpython = '/usr/bin/python'
+        cpython = 'python'
     else:
         cpython = argv[3]
     cpy_items = find_numpy_items(cpython)
