@@ -15,8 +15,8 @@ except AttributeError:
     use_cffi = False
 
 if '__pypy__' in sys.builtin_module_names:
-    import _numpypy.umath
-    if 'frompyfunc' not in dir(_numpypy.umath):
+    import _numpypy.umath,os
+    if 'frompyfunc' not in dir(_numpypy.umath) or os.environ.get('USE_CPYEXT', ''):
         use_cffi = False
 else:
     # since we use extended frompyfunc(),

@@ -42,7 +42,7 @@ def configuration(parent_package='',top_path=None):
     if have_cffi and '__pypy__' in sys.builtin_module_names:
         # pypy prefers cffi, cpython prefers capi
         build__umath_linalg_capi = False
-    if build__umath_linalg_capi:
+    if 1 or build__umath_linalg_capi:
         config.add_extension('lapack_lite',
                          sources = [get_lapack_lite_sources],
                          depends = ['lapack_litemodule.c'] + lapack_lite_src,
