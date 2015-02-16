@@ -27,7 +27,6 @@ else:
 
 if use_cffi:
 
-    from . import _umath_linalg_capi
     umath_ffi = cffi.FFI()
 
     umath_ffi.cdef('void init_constants(void);')
@@ -38,8 +37,8 @@ if use_cffi:
         names += [pre + name for pre in ['FLOAT_', 'DOUBLE_', 'CFLOAT_', 'CDOUBLE_']]
     for name in names:
         print 'defining', name
-        umath_ffi.cdef('void %s(char **args, int ** dimensions, int ** steps, void*);' % name)
-    umath_linalg_capi = umath_ffi.dlopen(_umath_linalg_capi.__file__)
+        umath_ffi.cdef('void %s(char **args, long * dimensions, long * steps, void*);' % name)
+    umath_linalg_capi = umath_ffi.dlopen(os.path.dirname(__file__) + '/libumath_linalg_cffi.so')
     umath_linalg_capi.init_constants()
 
     # lapack_lite imported the c functions from
@@ -519,35 +518,18 @@ if use_cffi:
             n = inarg.shape[0]
             instride = inarg.strides
             outstride = outarg.strides
-            if 1:
-                f_args = [toCharP(inarg), toCharP(outarg)]
-                dims = ffi.new('int[2]', [1, n])
-                steps = ffi.new('int[5]', [1, 1, instride[1], instride[0],
-                                            outstride[1], outstride[0]])
-                if cblas_typ == 's':
-                    umath_linalg_capi.FLOAT_inv(f_args, dims, steps, ffi.VOIDP)
-                elif cblas_typ == 'd':
-                    umath_linalg_capi.DOUBLE_inv(f_args, dims, steps, ffi.VOIDP)
-                elif cblas_typ == 'c':
-                    umath_linalg_capi.CFLOAT_inv(f_args, dims, steps, ffi.VOIDP)
-                elif cblas_typ == 'z':
-                    umath_linalg_capi.CDOUBLE_inv(f_args, dims, steps, ffi.VOIDP)
-            else:
-                error_occurred = get_fp_invalid_and_clear()
-                params = init_func(n, n)
-                linearize_matrix(params.A, inarg)
-                if params.B.size < 2:
-                    params.B[:] = 1
-                else:
-                    identity_matrix(params.B)
-                not_ok = call_func(params)
-                if not_ok == 0:
-                    delinearize_matrix(outarg, params.B)
-                else:
-                    error_occurred = 1
-                    outarg.fill(base_vals[cblas_typ]['nan'])
-                set_fp_invalid_or_clear(error_occurred)
-
+            f_args = [toCharP(inarg), toCharP(outarg)]
+            dims = umath_ffi.new('long[2]', [1, n])
+            steps = umath_ffi.new('long[6]', [1, 1, instride[1], instride[0],
+                                        outstride[1], outstride[0]])
+            if cblas_typ == 's':
+                umath_linalg_capi.FLOAT_inv(f_args, dims, steps, umath_ffi.VOIDP)
+            elif cblas_typ == 'd':
+                umath_linalg_capi.DOUBLE_inv(f_args, dims, steps, umath_ffi.VOIDP)
+            elif cblas_typ == 'c':
+                umath_linalg_capi.CFLOAT_inv(f_args, dims, steps, umath_ffi.VOIDP)
+            elif cblas_typ == 'z':
+                umath_linalg_capi.CDOUBLE_inv(f_args, dims, steps, umath_ffi.VOIDP)
         return solve, solve1, inv
 
     FLOAT_solve,   FLOAT_solve1, FLOAT_inv  = wrap_solvers(nt.float32, 's')
