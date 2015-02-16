@@ -1,6 +1,8 @@
-# A CFFI version of numpy/linalg/umath_linalg.c.src
-# As opposed to the numpy version, the cffi version leaves broadcasting to the responsibility
-# of the pypy extended frompyfunc, which removes the need for INIT_OUTER_LOOP*
+# calls the functions from linalg/umath_linalg.c.src via cffi rather than cpyext
+# As opposed to the numpy version, this version leaves broadcasting to the responsibility
+# of the pypy extended frompyfunc, so the _umath_linag_capi functions are always called
+# with the final arguments, no broadcasting needed.
+
 from warnings import warn
 import sys, os
 import lapack_lite # either a cffi version or a cextension module
@@ -24,14 +26,29 @@ else:
     use_cffi = False
 
 if use_cffi:
-    # lapack_lite already imported the c functions from
+
+    from . import _umath_linalg_capi
+    umath_ffi = cffi.FFI()
+
+    umath_ffi.cdef('void init_constants(void);')
+
+    base_four_names = ['inv']
+    names = []
+    for name in base_four_names:
+        names += [pre + name for pre in ['FLOAT_', 'DOUBLE_', 'CFLOAT_', 'CDOUBLE_']]
+    for name in names:
+        print 'defining', name
+        umath_ffi.cdef('void %s(char **args, int ** dimensions, int ** steps, void*);' % name)
+    umath_linalg_capi = umath_ffi.dlopen(_umath_linalg_capi.__file__)
+    umath_linalg_capi.init_constants()
+
+    # lapack_lite imported the c functions from
     # somewhere (lapack_lite compiled shared object or blas,
     # but the name of the function may be a bit different.
     # XXX cache this instead of looking up each call
     def get_c_func(blas_ch='', name=''):
         name = blas_ch + lapack_lite.macros['pfx'] + name + lapack_lite.macros['sfx']
         return getattr(lapack_lite._C, name)
-
 
     import numpy as np
 
@@ -61,7 +78,14 @@ if use_cffi:
             return ffi.cast('void*', 0)
         pData = src.__array_interface__['data'][0]
         return ffi.cast(toCtypeP[src.dtype], pData)
+    
+    def toCharP(src):
+        if src is None:
+            return umath_ffi.cast('void*', 0)
+        pData = src.__array_interface__['data'][0]
+        return umath_ffi.cast('char *', pData)
 
+    umath_ffi.VOIDP = umath_ffi.cast('void *', 0)
 
     # Try to find hidden floatstatus functions. On Pypy, we should expose
     # these through umath. On CPython, they might have been exported from
@@ -118,8 +142,8 @@ if use_cffi:
     class Params(object):
         params = ()
         def __init__(self, *args):
-            for a, v in zip(self.params, args):
-                setattr(self, a, v)
+            for i in len(args):
+                setattr(self.params[i], args[i]) 
 
         def dump(self, name):
             print >> sys.stderr, name
@@ -492,21 +516,37 @@ if use_cffi:
                 a[i,i] = base_vals[cblas_typ]['one']
 
         def inv(inarg, outarg):
-            error_occurred = get_fp_invalid_and_clear()
             n = inarg.shape[0]
-            params = init_func(n, n)
-            linearize_matrix(params.A, inarg)
-            if params.B.size < 2:
-                params.B[:] = 1
+            instride = inarg.strides
+            outstride = outarg.strides
+            if 1:
+                f_args = [toCharP(inarg), toCharP(outarg)]
+                dims = ffi.new('int[2]', [1, n])
+                steps = ffi.new('int[5]', [1, 1, instride[1], instride[0],
+                                            outstride[1], outstride[0]])
+                if cblas_typ == 's':
+                    umath_linalg_capi.FLOAT_inv(f_args, dims, steps, ffi.VOIDP)
+                elif cblas_typ == 'd':
+                    umath_linalg_capi.DOUBLE_inv(f_args, dims, steps, ffi.VOIDP)
+                elif cblas_typ == 'c':
+                    umath_linalg_capi.CFLOAT_inv(f_args, dims, steps, ffi.VOIDP)
+                elif cblas_typ == 'z':
+                    umath_linalg_capi.CDOUBLE_inv(f_args, dims, steps, ffi.VOIDP)
             else:
-                identity_matrix(params.B)
-            not_ok = call_func(params)
-            if not_ok == 0:
-                delinearize_matrix(outarg, params.B)
-            else:
-                error_occurred = 1
-                outarg.fill(base_vals[cblas_typ]['nan'])
-            set_fp_invalid_or_clear(error_occurred)
+                error_occurred = get_fp_invalid_and_clear()
+                params = init_func(n, n)
+                linearize_matrix(params.A, inarg)
+                if params.B.size < 2:
+                    params.B[:] = 1
+                else:
+                    identity_matrix(params.B)
+                not_ok = call_func(params)
+                if not_ok == 0:
+                    delinearize_matrix(outarg, params.B)
+                else:
+                    error_occurred = 1
+                    outarg.fill(base_vals[cblas_typ]['nan'])
+                set_fp_invalid_or_clear(error_occurred)
 
         return solve, solve1, inv
 
@@ -538,6 +578,7 @@ if use_cffi:
                                 "Results in the vectors with the solutions. \n"\
                                 "    \"(m,m),(m)->(m)\" \n",
                          )
+
     inv = frompyfunc([FLOAT_inv, DOUBLE_inv, CFLOAT_inv, CDOUBLE_inv],
                          1, 1, dtypes=[nt.float32, nt.float32,
                                        nt.float64, nt.float64,
