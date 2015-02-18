@@ -31,13 +31,13 @@ if use_cffi:
 
     umath_ffi.cdef('void init_constants(void);')
 
-    base_four_names = ['inv', 'solve1']
+    base_four_names = ['inv', 'solve1', 'solve']
     names = []
     for name in base_four_names:
         names += [pre + name for pre in ['FLOAT_', 'DOUBLE_', 'CFLOAT_', 'CDOUBLE_']]
     for name in names:
         print 'defining', name
-        umath_ffi.cdef('void %s(char **args, long * dimensions, long * steps, void*);' % name)
+        umath_ffi.cdef('void %s(char **args, intptr_t * dimensions, intptr_t * steps, void*);' % name)
     umath_linalg_capi = umath_ffi.dlopen(os.path.dirname(__file__) + '/libumath_linalg_cffi.so')
     umath_linalg_capi.init_constants()
 
@@ -457,42 +457,27 @@ if use_cffi:
     # --------------------------------------------------------------------------
     # Solve family (includes inv)
 
-    class gesv_params(Params):
-        params = ('A', 'B', 'IPIV', 'N', 'NRHS', 'LDA', 'LDB')
-
     def wrap_solvers(typ, cblas_typ):
-        def init_func(N, NRHS):
-            A = np.empty([N, N], dtype=typ)
-            if NRHS == 1:
-                B = np.empty([N], dtype = typ)
-            else:
-                B = np.empty([NRHS, N], dtype = typ)
-            ipiv = np.empty([N], dtype = nt.int32)
-            pN = ffi.new('int[1]', [N])
-            pNRHS = ffi.new('int[1]', [NRHS])
-            return gesv_params(A, B, ipiv, pN, pNRHS, pN, pN)
-
-        def call_func(params):
-            rv = ffi.new('int[1]')
-            get_c_func(cblas_typ, 'gesv')(params.N, params.NRHS, toCptr(params.A),
-                                             params.LDA, toCptr(params.IPIV),
-                                             toCptr(params.B), params.LDB, rv)
-            return rv[0]
-
         def solve(in0, in1, out0):
-            error_occurred = get_fp_invalid_and_clear()
             n = in0.shape[0]
-            nrhs = in1.shape[1]
-            params = init_func(n, nrhs)
-            linearize_matrix(params.A, in0)
-            linearize_matrix(params.B, in1)
-            not_ok = call_func(params)
-            if not_ok == 0:
-                delinearize_matrix(out0, params.B)
-            else:
-                error_occurred = 1
-                out1.fill(base_vals[cblas_typ]['nan'])
-            set_fp_invalid_or_clear(error_occurred);
+            nrhs = in1.shape[0]
+            in0stride = in0.strides
+            in1stride = in1.strides
+            out0stride = out0.strides
+            f_args = [toCharP(in0), toCharP(in1), toCharP(out0)]
+            
+            dims = umath_ffi.new('intptr_t[3]', [1, n, nrhs])
+            steps = umath_ffi.new('intptr_t[9]', [1, 1, 1, in0stride[0], in0stride[1],
+                                        in1stride[0], in1stride[1],
+                                        out0stride[0], out0stride[1]])
+            if cblas_typ == 's':
+                umath_linalg_capi.FLOAT_solve(f_args, dims, steps, umath_ffi.VOIDP)
+            elif cblas_typ == 'd':
+                umath_linalg_capi.DOUBLE_solve(f_args, dims, steps, umath_ffi.VOIDP)
+            elif cblas_typ == 'c':
+                umath_linalg_capi.CFLOAT_solve(f_args, dims, steps, umath_ffi.VOIDP)
+            elif cblas_typ == 'z':
+                umath_linalg_capi.CDOUBLE_solve(f_args, dims, steps, umath_ffi.VOIDP)
 
         def solve1(in0, in1, out0):
             n = in0.shape[0]
@@ -500,8 +485,8 @@ if use_cffi:
             in1stride = in1.strides
             out0stride = out0.strides
             f_args = [toCharP(in0), toCharP(in1), toCharP(out0)]
-            dims = umath_ffi.new('long[2]', [1, n])
-            steps = umath_ffi.new('long[7]', [1, 1, 1, in0stride[0], in0stride[1],
+            dims = umath_ffi.new('intptr_t[2]', [1, n])
+            steps = umath_ffi.new('intptr_t[7]', [1, 1, 1, in0stride[0], in0stride[1],
                                         in1stride[0], out0stride[0]])
             if cblas_typ == 's':
                 umath_linalg_capi.FLOAT_solve1(f_args, dims, steps, umath_ffi.VOIDP)
@@ -517,8 +502,8 @@ if use_cffi:
             instride = inarg.strides
             outstride = outarg.strides
             f_args = [toCharP(inarg), toCharP(outarg)]
-            dims = umath_ffi.new('long[2]', [1, n])
-            steps = umath_ffi.new('long[6]', [1, 1, instride[0], instride[1],
+            dims = umath_ffi.new('intptr_t[2]', [1, n])
+            steps = umath_ffi.new('intptr_t[6]', [1, 1, instride[0], instride[1],
                                         outstride[0], outstride[1]])
             if cblas_typ == 's':
                 umath_linalg_capi.FLOAT_inv(f_args, dims, steps, umath_ffi.VOIDP)
