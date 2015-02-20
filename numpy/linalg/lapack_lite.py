@@ -360,6 +360,13 @@ extern int
              f2c_doublecomplex *beta,
              f2c_doublecomplex *c, int *ldc);
 
+extern int
+{pfx}dgeqrf{sfx}(int *, int *, double *, int *, double *,
+	    double *, int *, int *);
+
+extern int
+{pfx}zgeqrf{sfx}(int *, int *, f2c_doublecomplex *, int *,
+         f2c_doublecomplex *, f2c_doublecomplex *, int *, int *);
 '''.format(**macros))
 
 '''
@@ -373,7 +380,7 @@ for name in ['sgeev', 'dgeev', 'cgeev', 'zgeev', 'ssyevd', 'dsyevd',
              'sgetrf', 'dgetrf', 'cgetrf', 'zgetrf', 'spotrf', 'dpotrf', 'cpotrf', 'zpotrf',
              'sgesdd', 'dgesdd', 'cgesdd', 'zgesdd', 'spotrs', 'dpotrs', 'cpotrs', 'zpotrs',
              'spotri', 'dpotri', 'cpotri', 'zpotri', 'scopy', 'dcopy', 'ccopy', 'zcopy',
-             'sdot', 'ddot', 'cdotu', 'zdotu', 'cdotc', 'zdotc',
+             'sdot', 'ddot', 'cdotu', 'zdotu', 'cdotc', 'zdotc', 'dgeqrf', 'zgeqrf',
              'sgemm', 'dgemm', 'cgemm', 'zgemm']:
     setattr(shared_object, name, getattr(_C, macros['pfx'] + name + macros['sfx']))
 
