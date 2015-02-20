@@ -1537,7 +1537,7 @@ EXPORTED void
     @TYPE@_eigh_wrapper('V', 'L', args, dimensions, steps);
 }
 
-static void
+EXPORTED void
 @TYPE@_eighup(char **args,
               npy_intp *dimensions,
               npy_intp *steps,
