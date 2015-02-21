@@ -32,9 +32,9 @@ if use_cffi:
     umath_ffi.cdef('''
         void init_constants(void);
         int npy_clear_floatstatus(void);
-        int npy_set_floatstatus_invalid(void);  
+        int npy_set_floatstatus_invalid(void);
     ''')
-    
+
     ufunc_cdef = 'void %s(char **args, intptr_t * dimensions, intptr_t * steps, void*);'
     all_four = ['FLOAT_', 'DOUBLE_', 'CFLOAT_', 'CDOUBLE_']
     three = ['FLOAT_', 'DOUBLE_', 'CDOUBLE_']
@@ -78,7 +78,7 @@ if use_cffi:
 
     toCtypeA = {nt.int32: 'int[1]', nt.float32: 'float[1]', nt.float64: 'double[1]',
                nt.complex64: 'f2c_complex[1]', nt.complex128: 'f2c_doublecomplex[1]'}
-   
+
     def toCharP(src):
         if src is None:
             return umath_ffi.cast('void*', 0)
@@ -105,7 +105,7 @@ if use_cffi:
     def wrap_slogdet(typ0, typ1, func):
         def slogdet(in0):
             ''' notes:
-             *   in must have shape [m, m], out[0] and out[1] scalar 
+             *   in must have shape [m, m], out[0] and out[1] scalar
             '''
             n = in0.shape[0]
             sign = ffi.new(toCtypeA[typ0])
@@ -270,7 +270,7 @@ if use_cffi:
             in1stride = in1.strides
             out0stride = out0.strides
             f_args = [toCharP(in0), toCharP(in1), toCharP(out0)]
-            
+
             dims = umath_ffi.new('intptr_t[3]', [1, n, nrhs])
             steps = umath_ffi.new('intptr_t[9]', [1, 1, 1, in0stride[0], in0stride[1],
                                         in1stride[0], in1stride[1],
