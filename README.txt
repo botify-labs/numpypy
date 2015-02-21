@@ -1,6 +1,6 @@
 Welcome to PyPy's fork of Numpy. In order to install::
 
-   git clone https://bitbucket.org/pypy/numpy.git; 
+   git clone https://bitbucket.org/pypy/numpy.git;
    cd numpy; pypy setup.py install
 
 or more cleanly::
@@ -16,7 +16,9 @@ If you installed to a system directory, you may need to run::
 
 once to initialize the cffi cached shared objects as `root`
 
-For now, NumPyPy only works with Python 2, and is not complete. You may get warnings or NotImplemented errors. Please let us know if you get crashes or wrong results.
+For now, NumPyPy only works with Python 2, and is not complete. You may get
+warnings or NotImplemented errors. Please let us know if you get crashes or
+wrong results.
 
 If you do not have lapack/blas runtimes, it may take over 10 minutes to install,
 since it needs to build a lapack compatability library.
