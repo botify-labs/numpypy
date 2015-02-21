@@ -76,14 +76,17 @@ def configuration(parent_package='',top_path=None):
         if sys.platform == 'win32':
             library_dirs = [sys.real_prefix + '/include',
                             sys.real_prefix + '/Libs']
+            extra_compiler_args = []
         else:
             library_dirs = []
+            extra_compiler_args = ['-Wl,-rpath=\'$ORIGIN\'']
         config.add_shared_library('umath_linalg_cffi',
                 sources = ['umath_linalg.c.src'],
                 build_info = {'depends': ['umath_linalg.c.src'],
                       'macros': [('_UMATH_LINALG_CAPI_DLL', None)],
                       'libraries':  ['npymath'] + lapack_info['libraries'],
                       'library_dirs':  library_dirs,
+                      'extra_compiler_args': extra_compiler_args,
                               }
                 )
     return config

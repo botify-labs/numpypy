@@ -293,6 +293,7 @@ class build_clib(old_build_clib):
                                    library_dirs=[self.build_temp] + \
                                         build_info.get('library_dirs', []),
                                    libraries=build_info.get('libraries', []),
+                                   extra_postargs = extra_postargs, 
                                    debug=self.debug)
         else:
             compiler.create_static_lib(objects, lib_name,
