@@ -38,6 +38,14 @@
 
 static const char* umath_linalg_version_string = "0.1.4";
 
+EXPORTED int _npy_clear_floatstatus(void)
+{
+    return npy_clear_floatstatus();
+}
+EXPORTED void _npy_set_floatstatus_invalid(void)
+{
+    npy_set_floatstatus_invalid();
+}  
 /*
  ****************************************************************************
  *                        Debugging support                                 *

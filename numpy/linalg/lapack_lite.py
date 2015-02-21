@@ -35,7 +35,7 @@ if use_cffi:
     _C = None
     from numpy.distutils import system_info
     # temporarily mess with environ
-    env = os.environ.copy()
+    saved_environ = os.environ.copy()
     if sys.platform == 'win32':
         ld_library_path = 'PATH'
         so_prefix = ''
@@ -61,7 +61,11 @@ if use_cffi:
             break
         except Exception as e:
             pass
-    os.environ = env
+    # workaround for a distutils bugs where some env vars can
+    # become longer and longer every time it is used
+    for key, value in saved_environ.items():
+        if os.environ.get(key) != value:
+            os.environ[key] = value
     if _C is None:
         shared_name = os.path.abspath(os.path.dirname(__file__)) + '/' + \
                             so_prefix + 'lapack_lite.' + so_suffix

@@ -51,8 +51,11 @@ if use_cffi:
     for name in names:
         umath_ffi.cdef(ufunc_cdef % name)
 
-    # TODO linux only for now
-    so_name = '/libumath_linalg_cffi.so'
+    # TODO macos?
+    if sys.platform == 'win32':
+        so_name = '/umath_linalg_cffi.dll'
+    else:
+        so_name = '/libumath_linalg_cffi.so'
     umath_linalg_capi = umath_ffi.dlopen(os.path.dirname(__file__) + so_name)
     umath_linalg_capi.init_constants()
 

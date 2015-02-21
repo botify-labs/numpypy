@@ -68,15 +68,22 @@ def configuration(parent_package='',top_path=None):
                          sources = sources,
                          build_info = build_info,
                          )
-            lapack_info = {libraries: 'lapack_lite'}
+            lapack_info = {'libraries': ['lapack_lite',]}
         else:
             # We will use the lapack available on the platform
             pass
+        # link in Python27.lib, on pypy this is in include
+        if sys.platform == 'win32':
+            library_dirs = [sys.real_prefix + '/include',
+                            sys.real_prefix + '/Libs']
+        else:
+            library_dirs = []
         config.add_shared_library('umath_linalg_cffi',
                 sources = ['umath_linalg.c.src'],
                 build_info = {'depends': ['umath_linalg.c.src'],
-                              'macros': [('_UMATH_LINALG_CAPI_DLL', None)],
-                              'libraries':  ['npymath'] + lapack_info['libraries'],
+                      'macros': [('_UMATH_LINALG_CAPI_DLL', None)],
+                      'libraries':  ['npymath'] + lapack_info['libraries'],
+                      'library_dirs':  library_dirs,
                               }
                 )
     return config

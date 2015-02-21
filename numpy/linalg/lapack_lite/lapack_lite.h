@@ -289,5 +289,11 @@ zgemm_(char *transa, char *transb,
              f2c_doublecomplex *b, int *ldb,
              f2c_doublecomplex *beta,
              f2c_doublecomplex *c, int *ldc);
+EXPORTED int
+dgeqrf_(int *, int *, double *, int *, double *,
+	    double *, int *, int *);
 
+EXPORTED int
+zgeqrf_(int *, int *, f2c_doublecomplex *, int *,
+         f2c_doublecomplex *, f2c_doublecomplex *, int *, int *);
 

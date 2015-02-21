@@ -18,6 +18,9 @@ once to initialize the cffi cached shared objects as `root`
 
 For now, NumPyPy only works with Python 2
 
+If you do not have lapack/blas runtimes, it may take over 10 minutes to install,
+since it needs to build a lapack compatability library.
+
 ----------------------------------------
 
 The original README.txt follows:
