@@ -31,8 +31,8 @@ if use_cffi:
 
     umath_ffi.cdef('''
         void init_constants(void);
-        int npy_clear_floatstatus(void);
-        int npy_set_floatstatus_invalid(void);
+        int _npy_clear_floatstatus(void);
+        int _npy_set_floatstatus_invalid(void);
     ''')
 
     ufunc_cdef = 'void %s(char **args, intptr_t * dimensions, intptr_t * steps, void*);'
@@ -87,8 +87,8 @@ if use_cffi:
 
     umath_ffi.VOIDP = umath_ffi.cast('void *', 0)
 
-    npy_clear_floatstatus = umath_linalg_capi.npy_clear_floatstatus
-    npy_set_floatstatus_invalid = umath_linalg_capi.npy_set_floatstatus_invalid
+    npy_clear_floatstatus = umath_linalg_capi._npy_clear_floatstatus
+    npy_set_floatstatus_invalid = umath_linalg_capi._npy_set_floatstatus_invalid
 
     def get_fp_invalid_and_clear():
         return bool(npy_clear_floatstatus() & np.FPE_INVALID)
