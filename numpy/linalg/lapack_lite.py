@@ -35,7 +35,7 @@ if use_cffi:
     _C = None
     from numpy.distutils import system_info
     # temporarily mess with environ
-    env = os.environ.copy()
+    saved_environ = os.environ.copy()
     if sys.platform == 'win32':
         ld_library_path = 'PATH'
         so_prefix = ''
@@ -61,7 +61,11 @@ if use_cffi:
             break
         except Exception as e:
             pass
-    os.environ = env
+    # workaround for a distutils bugs where some env vars can
+    # become longer and longer every time it is used
+    for key, value in saved_environ.items():
+        if os.environ.get(key) != value:
+            os.environ[key] = value
     if _C is None:
         shared_name = os.path.abspath(os.path.dirname(__file__)) + '/' + \
                             so_prefix + 'lapack_lite.' + so_suffix
@@ -360,6 +364,13 @@ extern int
              f2c_doublecomplex *beta,
              f2c_doublecomplex *c, int *ldc);
 
+extern int
+{pfx}dgeqrf{sfx}(int *, int *, double *, int *, double *,
+	    double *, int *, int *);
+
+extern int
+{pfx}zgeqrf{sfx}(int *, int *, f2c_doublecomplex *, int *,
+         f2c_doublecomplex *, f2c_doublecomplex *, int *, int *);
 '''.format(**macros))
 
 '''
@@ -373,7 +384,7 @@ for name in ['sgeev', 'dgeev', 'cgeev', 'zgeev', 'ssyevd', 'dsyevd',
              'sgetrf', 'dgetrf', 'cgetrf', 'zgetrf', 'spotrf', 'dpotrf', 'cpotrf', 'zpotrf',
              'sgesdd', 'dgesdd', 'cgesdd', 'zgesdd', 'spotrs', 'dpotrs', 'cpotrs', 'zpotrs',
              'spotri', 'dpotri', 'cpotri', 'zpotri', 'scopy', 'dcopy', 'ccopy', 'zcopy',
-             'sdot', 'ddot', 'cdotu', 'zdotu', 'cdotc', 'zdotc',
+             'sdot', 'ddot', 'cdotu', 'zdotu', 'cdotc', 'zdotc', 'dgeqrf', 'zgeqrf',
              'sgemm', 'dgemm', 'cgemm', 'zgemm']:
     setattr(shared_object, name, getattr(_C, macros['pfx'] + name + macros['sfx']))
 

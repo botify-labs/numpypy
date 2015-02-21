@@ -290,6 +290,8 @@ class build_clib(old_build_clib):
         if link == 'link_shared_lib':
             compiler.link_shared_lib(objects, lib_name,
                                    output_dir=self.build_temp,
+                                   library_dirs=[self.build_temp] + \
+                                        build_info.get('library_dirs', []),
                                    libraries=build_info.get('libraries', []),
                                    debug=self.debug)
         else:

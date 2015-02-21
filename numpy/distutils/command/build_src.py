@@ -97,6 +97,7 @@ class build_src(build_ext.build_ext):
             self.package = self.distribution.ext_package
         self.extensions = self.distribution.ext_modules
         self.libraries = self.distribution.libraries or []
+        self.shared_libraries = self.distribution.shared_libraries or []
         self.py_modules = self.distribution.py_modules or []
         self.data_files = self.distribution.data_files or []
 
@@ -148,7 +149,7 @@ class build_src(build_ext.build_ext):
 
     def run(self):
         log.info("build_src")
-        if not (self.extensions or self.libraries):
+        if not (self.extensions or self.libraries or self.shared_libraries):
             return
         self.build_sources()
 
@@ -160,7 +161,7 @@ class build_src(build_ext.build_ext):
 
         self.build_py_modules_sources()
 
-        for libname_info in self.libraries:
+        for libname_info in self.libraries + self.shared_libraries:
             self.build_library_sources(*libname_info)
 
         if self.extensions:
@@ -288,7 +289,7 @@ class build_src(build_ext.build_ext):
                 new_py_modules.append(source)
         self.py_modules[:] = new_py_modules
 
-    def build_library_sources(self, lib_name, build_info):
+    def build_library_sources(self, lib_name, build_info, *args):
         sources = list(build_info.get('sources', []))
 
         if not sources:
