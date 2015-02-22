@@ -68,6 +68,10 @@ def configuration(parent_package='',top_path=None):
             build_info['extra_compiler_args'] = \
                         lapack_info.get('extra_compiler_args',[])
 
+            if sys.platform == 'darwin':
+                build_info['extra_compiler_args'].extend(
+                        ['-Wl,-install_name,@loader_path/liblapack_lite.so'])
+
             config.add_shared_library('lapack_lite',
                          sources = sources,
                          build_info = build_info,
@@ -85,9 +89,7 @@ def configuration(parent_package='',top_path=None):
         elif sys.platform == 'darwin':
             library_dirs = []
             extra_compiler_args = lapack_info.get('extra_compile_args', []) + \
-                                  lapack_info.get(' extra_link_args', []) + \
-                                  ['-Wl,-rpath','-Wl,@executable_path/',
-                                   '-mmacosx-version-min=10.5']
+                                  lapack_info.get('extra_link_args', [])
             macros = [('_UMATH_LINALG_CAPI_DLL', None)] + lapack_info.get(
                       'define_macros', [])
         else:
