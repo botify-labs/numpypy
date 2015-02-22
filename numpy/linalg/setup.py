@@ -86,7 +86,7 @@ def configuration(parent_package='',top_path=None):
             library_dirs = []
             extra_compiler_args = lapack_info.get('extra_compile_args', []) + \
                                   lapack_info.get(' extra_link_args', []) + \
-                                  ['-Wl,-rpath','-Wl,@executable_path',
+                                  ['-Wl,-rpath','-Wl,@executable_path/',
                                    '-mmacosx-version-min=10.5']
             macros = [('_UMATH_LINALG_CAPI_DLL', None)] + lapack_info.get(
                       'define_macros', [])
