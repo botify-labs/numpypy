@@ -77,15 +77,24 @@ def configuration(parent_package='',top_path=None):
             library_dirs = [sys.real_prefix + '/include',
                             sys.real_prefix + '/Libs']
             extra_compiler_args = []
+            macros = [('_UMATH_LINALG_CAPI_DLL', None)]
+        elif sys.platform == 'darwin':
+            library_dirs = []
+            extra_compiler_args = lapack_info.get('extra_compile_args', []) + \
+                                  lapack_info.get(' extra_link_args', []) + \
+                                  ['-Wl,-rpath','-Wl,@executable_path']
+            macros = [('_UMATH_LINALG_CAPI_DLL', None)] + lapack_info.get(
+                      'define_macros', [])
         else:
             library_dirs = []
             extra_compiler_args = ['-Wl,-rpath=\'$ORIGIN\'']
+            macros = [('_UMATH_LINALG_CAPI_DLL', None)]
         config.add_shared_library('umath_linalg_cffi',
                 sources = ['umath_linalg.c.src'],
                 build_info = {'depends': ['umath_linalg.c.src'],
-                      'macros': [('_UMATH_LINALG_CAPI_DLL', None)],
-                      'libraries':  ['npymath'] + lapack_info['libraries'],
+                      'libraries':  ['npymath'] + lapack_info.get('libraries',[]),
                       'library_dirs':  library_dirs,
+                      'macros': macros,
                       'extra_compiler_args': extra_compiler_args,
                               }
                 )
