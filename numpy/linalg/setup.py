@@ -58,17 +58,21 @@ def configuration(parent_package='',top_path=None):
     else:
         # Use cffi to load shared objects, not modules
         if not lapack_info:
+            lapack_info = {}
+        if not lapack_info.get('libraries', ''):
             build_info = {}
             print("### Warning:  Using unoptimized lapack ###")
             sources = lapack_lite_src[:-1]
             build_info['depends'] = sources
             build_info['macros'] = [('_LAPACK_LITE_DLL', None)]
+            build_info['extra_compiler_args'] = \
+                        lapack_info.get('extra_compiler_args',[])
 
             config.add_shared_library('lapack_lite',
                          sources = sources,
                          build_info = build_info,
                          )
-            lapack_info = {'libraries': ['lapack_lite',]}
+            lapack_info['libraries'] = ['lapack_lite',]
         else:
             # We will use the lapack available on the platform
             pass
@@ -82,7 +86,8 @@ def configuration(parent_package='',top_path=None):
             library_dirs = []
             extra_compiler_args = lapack_info.get('extra_compile_args', []) + \
                                   lapack_info.get(' extra_link_args', []) + \
-                                  ['-Wl,-rpath','-Wl,@executable_path']
+                                  ['-Wl,-rpath','-Wl,@executable_path',
+                                   '-mmacosx-version-min=10.5']
             macros = [('_UMATH_LINALG_CAPI_DLL', None)] + lapack_info.get(
                       'define_macros', [])
         else:
