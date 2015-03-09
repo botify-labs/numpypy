@@ -53,7 +53,7 @@ def configuration(parent_package='',top_path=None):
             defs.append(('_MTRAND_DLL',None))
         config.add_shared_library('_mtrand',
                          sources=[join('mtrand', x) for x in
-                                  ['randomkit.c', 'distributions.c']],
+                                  ['randomkit.c', 'distributions.c', 'initarray.c']],
                          build_info = {
                              'libraries': libs,
                              'depends': [join('mtrand', '*.h'),

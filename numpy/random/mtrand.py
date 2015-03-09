@@ -124,6 +124,11 @@ extern double rk_gauss(rk_state *state);
 
 /* end of randomkit.h */
 
+/* from initarray.h */
+extern void
+init_by_array(rk_state *self, unsigned long init_key[],
+              intptr_t key_length);
+
 /* from distributions.h */
 /* Copyright 2005 Robert Kern (robert.kern@gmail.com)
  *
@@ -475,14 +480,15 @@ class RandomState(object):
         """
         if seed is None:
             errcode = _mtrand.rk_randomseed(self.internal_state)
-        elif type(seed) is int:
+        elif isinstance(seed, long):
             _errcode = _mtrand.rk_seed(seed, self.internal_state)
         elif isinstance(seed, np.integer):
             iseed = int(seed)
             _mtrand.rk_seed(iseed, self.internal_state)
         else:
             obj = np.array(seed, int)
-            init_by_array(self.internal_state, obj, obj.shape[0])
+            obj_p = _mtrand.cast('int *', obj.__array_interface__['data'][0])
+            _mtrand.init_by_array(self.internal_state, obj_p, obj.shape[0])
 
     def get_state(self):
         """
