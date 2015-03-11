@@ -82,8 +82,8 @@ def configuration(parent_package='',top_path=None):
             pass
         # link in Python27.lib, on pypy this is in include
         if sys.platform == 'win32':
-            library_dirs = [sys.real_prefix + '/include',
-                            sys.real_prefix + '/Libs']
+            library_dirs = [sys.prefix + '/include',
+                            sys.prefix + '/Libs']
             extra_compiler_args = []
             macros = [('_UMATH_LINALG_CAPI_DLL', None)]
         elif sys.platform == 'darwin':
