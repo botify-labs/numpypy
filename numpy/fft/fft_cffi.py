@@ -1539,7 +1539,7 @@ def cfftf(a, wsave):
     n = ffi.cast('int', npts)
     wsave_ptr = wsave.__array_interface__['data'][0]
     for i in range(nrepeats):
-        print 'npts,i,a.shape',npts,i,a.shape,a.dtype
+        #print 'npts,i,a.shape',npts,i,a.shape,a.dtype
         dptr = a_copy.__array_interface__['data'][0] + npts * i
         a_copy_cdata = ffi.cast('double*', dptr)
         C.cfftf(n, a_copy_cdata, ffi.cast('double*', wsave_ptr))
