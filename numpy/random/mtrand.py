@@ -126,7 +126,7 @@ extern double rk_gauss(rk_state *state);
 
 /* from initarray.h */
 extern void
-init_by_array(rk_state *self, unsigned long init_key[],
+init_by_array(rk_state *self, unsigned long * init_key,
               intptr_t key_length);
 
 /* from distributions.h */
@@ -487,7 +487,7 @@ class RandomState(object):
             _mtrand.rk_seed(iseed, self.internal_state)
         else:
             obj = np.array(seed, int)
-            obj_p = _mtrand.cast('int *', obj.__array_interface__['data'][0])
+            obj_p = ffi.cast('unsigned long *', obj.__array_interface__['data'][0])
             _mtrand.init_by_array(self.internal_state, obj_p, obj.shape[0])
 
     def get_state(self):
