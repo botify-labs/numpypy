@@ -480,7 +480,7 @@ class RandomState(object):
         """
         if seed is None:
             errcode = _mtrand.rk_randomseed(self.internal_state)
-        elif isinstance(seed, long):
+        elif isinstance(seed, (long, int)):
             _errcode = _mtrand.rk_seed(seed, self.internal_state)
         elif isinstance(seed, np.integer):
             iseed = int(seed)
