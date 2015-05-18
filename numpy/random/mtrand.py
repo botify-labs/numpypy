@@ -416,6 +416,16 @@ def kahan_sum(darr, n):
         ret = t
     return ret
 
+def _shape_from_size(size, d):
+    if size is None:
+        shape = (d,)
+    else:
+        try:
+           shape = (int(size), d)
+        except TypeError:
+           shape = tuple(size) + (d,)
+    return shape
+
 class RandomState(object):
     """
     RandomState(seed=None)
@@ -478,15 +488,21 @@ class RandomState(object):
         RandomState
 
         """
-        if seed is None:
-            errcode = _mtrand.rk_randomseed(self.internal_state)
-        elif isinstance(seed, (long, int)):
-            _errcode = _mtrand.rk_seed(seed, self.internal_state)
-        elif isinstance(seed, np.integer):
-            iseed = int(seed)
-            _mtrand.rk_seed(iseed, self.internal_state)
-        else:
-            obj = np.array(seed, int)
+        try:
+            if seed is None:
+                errcode = _mtrand.rk_randomseed(self.internal_state)
+            elif isinstance(seed, float):
+                raise TypeError('seed must be int')
+            else:
+                seed = int(seed)
+                if seed > 2**32 - 1 or seed < 0:
+                    raise ValueError("Seed must be between 0 and 4294967295")
+                _mtrand.rk_seed(seed, self.internal_state)
+        except TypeError:
+            obj = np.asarray(seed).astype(np.int64, casting='safe')
+            if ((obj > int(2**32 - 1)) | (obj < 0)).any():
+                raise ValueError("Seed must be between 0 and 4294967295")
+            obj = obj.astype('L', casting='unsafe')
             obj_p = ffi.cast('unsigned long *', obj.__array_interface__['data'][0])
             _mtrand.init_by_array(self.internal_state, obj_p, obj.shape[0])
 
@@ -3328,6 +3344,8 @@ class RandomState(object):
                 raise ValueError("p < 0")
             elif fp > 1:
                 raise ValueError("p > 1")
+            elif np.isnan(fp):
+                raise ValueError("p is nan")
             return discnp_array_sc(self.internal_state, _mtrand.rk_binomial, size, ln, fp)
 
         on = np.array(n, np.long) # aligned?
@@ -4053,12 +4071,7 @@ class RandomState(object):
         if kahan_sum(pix, d-1) > (1.0 + 1e-12):
             raise ValueError("sum(pvals[:-1]) > 1.0")
 
-        if size is None:
-            shape = (d,)
-        elif type(size) is int:
-            shape = (size, d)
-        else:
-            shape = size + (d,)
+        shape = _shape_from_size(size, d)
 
         multin = np.zeros(shape, int)
         mnix = multin.flat
@@ -4158,15 +4171,10 @@ class RandomState(object):
 
         #return val
 
-        alpha   = np.array(alpha, np.float64)
-        k           = alpha.size
+        alpha = np.array(alpha, np.float64)
+        k     = alpha.size
 
-        if size is None:
-            shape = (k,)
-        elif type(size) is int:
-            shape = (size, k)
-        else:
-            shape = size + (k,)
+        shape = _shape_from_size(size, k)
 
         diric   = np.zeros(shape, np.float64)
         val_data = diric.flat
