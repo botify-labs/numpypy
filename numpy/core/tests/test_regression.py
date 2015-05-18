@@ -1698,7 +1698,7 @@ class TestRegression(TestCase):
         b = np.zeros((2, 2, 2), order='F')[:,:, ::2].squeeze()
         assert_(a.flags.c_contiguous)
         assert_(a.flags.f_contiguous)
-        assert_(b.flags.f_contiguous)
+        assert_(b.flags.fortran, "F order not respected")
 
     def test_reduce_contiguous(self):
         """GitHub issue #387"""
@@ -2036,7 +2036,7 @@ class TestRegression(TestCase):
         a = np.empty((2, 2), order='F')
         b = copy.copy(a)
         c = copy.deepcopy(a)
-        assert_(b.flags.fortran)
+        assert_(b.flags.fortran, "F order not respected")
         assert_(b.flags.f_contiguous)
         assert_(c.flags.fortran)
         assert_(c.flags.f_contiguous)

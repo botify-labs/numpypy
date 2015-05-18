@@ -1745,7 +1745,7 @@ class TestCreationFuncs(TestCase):
                                **fill_kwarg)
 
                     assert_(arr.dtype == dtype)
-                    assert_(getattr(arr.flags, self.orders[order]))
+                    assert_(getattr(arr.flags, self.orders[order]),'arr is not %s' % self.orders[order])
 
                     if fill_value is not None:
                         if dtype.str.startswith('|S'):
