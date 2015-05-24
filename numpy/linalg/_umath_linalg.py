@@ -112,7 +112,7 @@ if use_cffi:
             logdet = ffi.new(toCtypeA[typ1])
             f_args = [toCharP(in0), ffi.cast('char*', sign), ffi.cast('char*', logdet)]
             dims = umath_ffi.new('intptr_t[2]', [1, n])
-            steps = umath_ffi.new('intptr_t[4]', [1, 1, 1, in0.strides[0], in0.strides[1]])
+            steps = umath_ffi.new('intptr_t[5]', [1, 1, 1, in0.strides[0], in0.strides[1]])
             func(f_args, dims, steps, umath_ffi.VOIDP)
             return sign[0], logdet[0]
         return slogdet
