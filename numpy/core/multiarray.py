@@ -1,9 +1,18 @@
+from _numpypy.multiarray import *
+from _numpypy.multiarray import _reconstruct
+
 def _fastCopyAndTranspose(a):
     return a.T.copy()
 
-def copyto(dst, src, casting='same_kind', where=None):
-    if where is None:
+def copyto(dst, src, casting=None, where=None):
+    if casting is not None:
+        raise NotImplementedError('copyto(..., casting=%s, ...) not implemented yet' % casting)
+    if where is None and (not isinstance(src, ndarray) or src.size < 2):
         dst.fill(src)
+    elif where is None:
+        dst[:] = src
+    elif isinstance(src, ndarray) and src.size > 1:
+        dst[where] = src[where]
     else:
         dst[where] = src
 
@@ -47,8 +56,6 @@ def may_share_memory(a, b):
 def result_type(*args):
     return 'float64'
 
-from _numpypy.multiarray import *
-from _numpypy.multiarray import _reconstruct
 
 def NotImplementedFunc(func):
     def tmp(*args, **kwargs):
