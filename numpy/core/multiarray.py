@@ -4,14 +4,17 @@ from _numpypy.multiarray import _reconstruct
 def _fastCopyAndTranspose(a):
     return a.T.copy()
 
-def copyto(dst, src, casting=None, where=None):
-    if casting is not None:
-        raise NotImplementedError('copyto(..., casting=%s, ...) not implemented yet' % casting)
-    if where is None and (not isinstance(src, ndarray) or src.size < 2):
+def copyto(dst, src, casting='same_kind', where=None):
+    src = array(src)
+    if not can_cast(src.dtype, dst.dtype, casting=casting):
+        raise TypeError('Cannot cast from %s to %s according to the rule %s' % (
+                        src.dtype, dst.dtype, casting))
+    src = src.astype(dst.dtype)
+    if where is None and src.size < 2:
         dst.fill(src)
     elif where is None:
         dst[:] = src
-    elif isinstance(src, ndarray) and src.size > 1:
+    elif src.size > 1:
         dst[where] = src[where]
     else:
         dst[where] = src
