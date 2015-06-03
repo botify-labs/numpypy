@@ -56,10 +56,6 @@ def may_share_memory(a, b):
         return False
     return True
 
-def result_type(*args):
-    return 'float64'
-
-
 def NotImplementedFunc(func):
     def tmp(*args, **kwargs):
         raise NotImplementedError("%s not implemented yet" % func)
