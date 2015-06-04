@@ -421,7 +421,7 @@ def _shape_from_size(size, d):
         shape = (d,)
     else:
         try:
-           shape = (int(size), d)
+           shape = (operator.index(size), d)
         except TypeError:
            shape = tuple(size) + (d,)
     return shape
