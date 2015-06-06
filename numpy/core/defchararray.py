@@ -1809,6 +1809,7 @@ class chararray(ndarray):
     """
     def __new__(subtype, shape, itemsize=1, unicode=False, buffer=None,
                 offset=0, strides=None, order='C'):
+        raise NotImplementedError('chararray is deprecated')
         global _globalvar
 
         if unicode:
@@ -1844,6 +1845,7 @@ class chararray(ndarray):
 
     def __array_finalize__(self, obj):
         # The b is a special case because it is used for reconstructing.
+        raise NotImplementedError('chararray is deprecated')
         if not _globalvar and self.dtype.char not in 'SUbc':
             raise ValueError("Can only create a chararray from string data.")
 
