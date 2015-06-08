@@ -5,21 +5,36 @@ def _fastCopyAndTranspose(a):
     return a.T.copy()
 
 def _copyto(dst, src, casting='same_kind', where=None):
+    if not isinstance(dst, np.ndarray):
+        raise TypeError('argument 1 must be numpy.ndarray, not %s' % type(dst).__name__)
     src = array(src)
     if not can_cast(src.dtype, dst.dtype, casting=casting):
         raise TypeError('Cannot cast from %s to %s according to the rule %s' % (
                         src.dtype, dst.dtype, casting))
-    src = src.astype(dst.dtype)
+    src = src.astype(dst.dtype, casting=casting)
     if where is None and src.size < 2:
         dst.fill(src)
     elif where is None or where is True:
         dst[:] = src
     elif where is False:
         return
-    elif src.size > 1:
-        dst[where] = src[where]
     else:
-        dst[where] = src
+        where = array(where, dtype=bool)
+        broadcast_dims = len(dst.shape) - len(where.shape)
+        if broadcast_dims < 0:
+            raise ValueError('could not broadcast where mask from shape'
+                '%s into shape %s' % (str(where.shape), str(dst.shape)))
+        if dst.shape[broadcast_dims:] != where.shape:
+            raise ValueError('could not broadcast where mask from shape'
+                '%s into shape %s' % (str(where.shape), str(dst.shape)))
+        # Repeat 'where' so it broadcasts into dst
+        where.shape = (1,)*broadcast_dims + where.shape
+        for i in range(broadcast_dims):
+            where = where.repeat(dst.shape[i], axis=i)
+        if src.size > 1:
+            dst[where] = src[where]
+        else:
+            dst[where] = src
 
 if 'copyto' not in globals():
     copyto = _copyto
