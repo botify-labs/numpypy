@@ -5,7 +5,7 @@ def _fastCopyAndTranspose(a):
     return a.T.copy()
 
 def _copyto(dst, src, casting='same_kind', where=None):
-    if not isinstance(dst, np.ndarray):
+    if not isinstance(dst, ndarray):
         raise TypeError('argument 1 must be numpy.ndarray, not %s' % type(dst).__name__)
     src = array(src)
     if not can_cast(src.dtype, dst.dtype, casting=casting):
