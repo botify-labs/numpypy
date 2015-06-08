@@ -4,7 +4,7 @@ from _numpypy.multiarray import _reconstruct
 def _fastCopyAndTranspose(a):
     return a.T.copy()
 
-def copyto(dst, src, casting='same_kind', where=None):
+def _copyto(dst, src, casting='same_kind', where=None):
     src = array(src)
     if not can_cast(src.dtype, dst.dtype, casting=casting):
         raise TypeError('Cannot cast from %s to %s according to the rule %s' % (
@@ -12,12 +12,17 @@ def copyto(dst, src, casting='same_kind', where=None):
     src = src.astype(dst.dtype)
     if where is None and src.size < 2:
         dst.fill(src)
-    elif where is None:
+    elif where is None or where is True:
         dst[:] = src
+    elif where is False:
+        return
     elif src.size > 1:
         dst[where] = src[where]
     else:
         dst[where] = src
+
+if 'copyto' not in globals():
+    copyto = _copyto
 
 def format_longfloat(x, precision):
     return "%%.%df" % precision % x
