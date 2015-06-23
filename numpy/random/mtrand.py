@@ -620,7 +620,8 @@ class RandomState(object):
         self.set_state(state)
 
     def __reduce__(self):
-        return (np.random.__RandomState_ctor, (), self.get_state())
+        # avoid name mangling of __Attribute in a class
+        return (getattr(np.random, '__RandomState_ctor'), (), self.get_state())
 
     # Basic distributions:
     def random_sample(self, size=None):
