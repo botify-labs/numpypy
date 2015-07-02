@@ -3,7 +3,7 @@ Welcome to PyPy's fork of Numpy. In order to install::
    git clone https://bitbucket.org/pypy/numpy.git;
    cd numpy; pypy setup.py install
 
-or more cleanly, (but currently [fails on MacOS](https://bitbucket.org/pypy/numpy/issue/25) )::
+or more cleanly, but currently fails on MacOS::
 
     pip install git+https://bitbucket.org/pypy/numpy.git
 
