@@ -3,9 +3,10 @@ Welcome to PyPy's fork of Numpy. In order to install::
    git clone https://bitbucket.org/pypy/numpy.git;
    cd numpy; pypy setup.py install
 
-or more cleanly, but currently fails on MacOS::
+or without a git checkout, but currently fails on MacOS::
 
-    pip install git+https://bitbucket.org/pypy/numpy.git
+    /path/to/pypy/bin/pypy -mensurepip
+    /path/to/pypy/bin/pip install git+https://bitbucket.org/pypy/numpy.git
 
 If you get a message about `missing Python.h` you must install the pypy-dev
 package for your system
