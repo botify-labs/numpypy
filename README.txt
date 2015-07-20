@@ -1,8 +1,8 @@
 Welcome to PyPy's fork of Numpy. In order to install, first
-[install pypy](http://pypy.org/download.html). Note this is a binary
-install, no lengthy translation or compilation necessary. Once you have
-pypy working and feel comfortable using it, you can install our version
-of numpy into this installed pypy::
+install pypy, hints are here http://pypy.org/download.html. Note this is 
+a binary install, no lengthy translation or compilation necessary. Once you
+have pypy working and feel comfortable using it, you can install our version
+of the numpy module into this installed pypy::
 
    git clone https://bitbucket.org/pypy/numpy.git;
    cd numpy; /path/to/pypy/bin/pypy setup.py install
