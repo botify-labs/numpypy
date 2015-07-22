@@ -62,6 +62,11 @@ def interp(x, xp, fp, left=None, right=None):
 
     return af
 
+try:
+    from _numpypy.multiarray import add_docstring
+except ImportError:
+    pass
+
 
 def NotImplementedFunc(func):
     def tmp(*args, **kwargs):
