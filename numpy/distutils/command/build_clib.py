@@ -114,7 +114,7 @@ class build_clib(old_build_clib):
                 libname = self.compiler.library_filename(l[0], lib_type='shared')
                 source = os.path.join(self.build_clib, libname)
                 target =  os.path.join(l[2], libname)
-                self.mkpath(target)
+                self.mkpath(l[2])
                 shutil.copy(source, target)
 
     def get_source_files(self):
@@ -293,7 +293,7 @@ class build_clib(old_build_clib):
                                    library_dirs=[self.build_temp] + \
                                         build_info.get('library_dirs', []),
                                    libraries=build_info.get('libraries', []),
-                                   extra_postargs = extra_postargs, 
+                                   extra_postargs = extra_postargs,
                                    debug=self.debug)
         else:
             compiler.create_static_lib(objects, lib_name,
