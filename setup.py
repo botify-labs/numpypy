@@ -43,7 +43,7 @@ if sys.platform == 'darwin' and __file__.startswith('/var'):
     # So to fix it, we change our __file__ because it's the least invasive thing to
     # do. This should only happen from git checkouts, pip uses a different mechanism
     # for tarballs. The OS X filesystem layout is also unlikely to change.
-    __file__ = '/private' + __file__
+    __file__ = os.path.realpath(__file__)
 
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
