@@ -2,13 +2,13 @@ Welcome to PyPy's fork of Numpy. In order to install, first
 install pypy, hints are here http://pypy.org/download.html. Note this is 
 a binary install, no lengthy translation or compilation necessary. Once you
 have pypy working and feel comfortable using it, you can install our version
-of the numpy module into a virtual environment in a seperate direcory::
+of the numpy module into a virtual environment in a separate directory::
 
    virtualenv -p /path/to/pypy/bin/pypy /directory/to/try/pypy-numpy
    git clone https://bitbucket.org/pypy/numpy.git;
    cd numpy; /director/to/try/pypy-numpy/bin/pypy setup.py install
 
-or without a git checkout, but currently fails on MacOS::
+or without a git checkout::
 
    virtualenv -p /path/to/pypy/bin/pypy /directory/to/try/pypy-numpy
     /directory/to/try/pypy-numpy/bin/pip install git+https://bitbucket.org/pypy/numpy.git
