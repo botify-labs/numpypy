@@ -1,7 +1,7 @@
+from os.path import join, dirname
 import cffi
 
 ffi = cffi.FFI()
-ffi.set_source("numpy.random._mtrand", None)
 ffi.cdef('''
 /* from randomkit.h */
 //#define RK_STATE_LEN 624
@@ -296,11 +296,16 @@ extern double rk_triangular(rk_state *state, double left, double mode, double ri
 
 /* Logarithmic series distribution */
 extern long rk_logseries(rk_state *state, double p);
-
-
-
-
 ''')
 
+ffi.set_source(
+    "numpy.random._mtrand",
+    """
+#include "mtrand/initarray.h"
+#include "mtrand/randomkit.h"
+#include "mtrand/distributions.h"
+""")
+
 if __name__ == '__main__':
-    ffi.compile()
+    c_source_name = join(dirname(__file__), "_mtrand.c")
+    ffi.emit_c_code(c_source_name)

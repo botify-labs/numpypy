@@ -51,16 +51,14 @@ def configuration(parent_package='',top_path=None):
         if sys.platform == 'win32':
             libs.append('Advapi32')
             defs.append(('_MTRAND_DLL',None))
-        config.add_shared_library('_mtrand',
-                         sources=[join('mtrand', x) for x in
-                                  ['randomkit.c', 'distributions.c', 'initarray.c']],
-                         build_info = {
-                             'libraries': libs,
-                             'depends': [join('mtrand', '*.h'),
-                                        ],
-                             'macros': defs,
-                            }
-                        )
+        config.add_extension("_mtrand",
+            sources=(
+                [join('mtrand', x) for x in
+                 ['randomkit.c', 'distributions.c', 'initarray.c']] +
+                ['_mtrand.c']),
+            libraries=libs,
+            depends=[join('mtrand', '*.h')],
+            define_macros=defs)
     else:
         config.add_extension('mtrand',
                          sources=[join('mtrand', x) for x in
