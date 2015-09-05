@@ -390,7 +390,7 @@ for name in ['sgeev', 'dgeev', 'cgeev', 'zgeev', 'ssyevd', 'dsyevd',
 
 '''
 Since numpy expects to be able to call these functions with python objects,
-create a mapping mechanism: 
+create a mapping mechanism:
   ndarray -> equivalent pointer to its data based on dtype
   numpy scalar -> equivalent pointer based on ffi.cast
   ffi.CData -> ready to be called
@@ -442,15 +442,6 @@ def call_func(name):
 def not_implemented(*args):
     raise NotImplementedError('function not found, does lapack_lite object exist?')
 
-for name in ['sgeev', 'dgeev', 'cgeev', 'zgeev', 'ssyevd', 'dsyevd', 'cheevd',
-         'zheevd', 'dgelsd', 'zgelsd', 'sgesv', 'dgesv', 'cgesv', 'zgesv',
-         'sgetrf', 'dgetrf', 'cgetrf', 'zgetrf', 'spotrf', 'dpotrf', 'cpotrf',
-         'zpotrf', 'sgesdd', 'dgesdd', 'cgesdd', 'zgesdd', 'spotrs', 'dpotrs',
-         'cpotrs', 'zpotrs', 'spotri', 'dpotri', 'cpotri', 'zpotri', 'scopy',
-         'dcopy', 'ccopy', 'zcopy', 'sdot', 'ddot', 'cdotu', 'zdotu', 'cdotc',
-         'zdotc', 'sgemm', 'dgemm', 'cgemm', 'zgemm', 'dgessd', 'dgeqrf',
-         'dorggr', 'zgeqrf', 'zungqr', 'xerbla']:
-    if name in dir(shared_object):
-        globals()[name] = call_func(name)
-    else:
-        globals()[name] = not_implemented
+for name in ['dgelsd', 'dgeqrf', 'dorgqr', 'zgelsd', 'zgeqrf', 'zungqr',
+             'xerbla']:
+    globals()[name] = call_func(name)
