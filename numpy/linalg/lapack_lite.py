@@ -368,20 +368,6 @@ extern int
          f2c_doublecomplex *, f2c_doublecomplex *, int *, int *);
 '''.format(**macros))
 
-'''
-Create a shared_object which maps the bare name to the one with pfx, sfx
-'''
-
-shared_object = Dummy()
-
-for name in ['sgeev', 'dgeev', 'cgeev', 'zgeev', 'ssyevd', 'dsyevd',
-             'cheevd', 'zheevd', 'dgelsd', 'zgelsd', 'sgesv', 'dgesv', 'cgesv', 'zgesv',
-             'sgetrf', 'dgetrf', 'cgetrf', 'zgetrf', 'spotrf', 'dpotrf', 'cpotrf', 'zpotrf',
-             'sgesdd', 'dgesdd', 'cgesdd', 'zgesdd', 'spotrs', 'dpotrs', 'cpotrs', 'zpotrs',
-             'spotri', 'dpotri', 'cpotri', 'zpotri', 'scopy', 'dcopy', 'ccopy', 'zcopy',
-             'sdot', 'ddot', 'cdotu', 'zdotu', 'cdotc', 'zdotc', 'dgeqrf', 'zgeqrf',
-             'sgemm', 'dgemm', 'cgemm', 'zgemm']:
-    setattr(shared_object, name, getattr(_C, macros['pfx'] + name + macros['sfx']))
 
 '''
 Since numpy expects to be able to call these functions with python objects,
@@ -421,14 +407,15 @@ def convert_arg(inarg, ffitype):
     return ffi.new( ctyp + '[1]', [inarg])
 
 def call_func(name):
+    c_name = macros['pfx'] + name + macros['sfx']
     def call_with_convert(*args):
-        func = getattr(shared_object, name)
+        func = getattr(_C, c_name)
         fargs = ffi.typeof(func).args
         converted_args = [convert_arg(a,b) for a,b in zip(args, fargs)]
         res = func(*converted_args)
         retval = {'info':converted_args[-1][0]}
         # numpy expects a dictionary
-        if 'gelsd' in name:
+        if 'gelsd' in c_name:
             # special case, the rank argument is returned as well
             retval['rank'] = converted_args[9][0]
         return retval
