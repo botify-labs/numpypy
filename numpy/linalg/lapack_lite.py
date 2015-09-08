@@ -1,87 +1,82 @@
 # A CFFI version of numpy/linalg/lapack_module.c
 import sys, os
 import warnings
-try:
-    import cffi
-    use_cffi = True
-except ImportError:
-    use_cffi = False
+import cffi
 
-if use_cffi:
-    import numpy as np
-    # dtype has not been imported yet
-    from numpy.core.multiarray import dtype
-    class Dummy(object):
+import numpy as np
+# dtype has not been imported yet
+from numpy.core.multiarray import dtype
+
+class Dummy(object):
+    pass
+nt = Dummy()
+nt.int32 = dtype('int32')
+nt.int8 = dtype('int8')
+nt.float32 = dtype('float32')
+nt.float64 = dtype('float64')
+nt.complex64 = dtype('complex64')
+nt.complex128 = dtype('complex128')
+
+__version__ = '0.1.4'
+
+macros = {'sfx': '_', 'pfx': ''}
+ffi = cffi.FFI()
+
+
+# The next section is a hack to find the lapack implementation, loosly based on
+# numpy.distutils.system_info.get_info. The idea is to use a site.cfg file to specify
+# where the shared object is located. Note that we need the lapack (high-level) interface,
+# they in turn call a low-level implementation maybe using blas or atlas.
+# This has not been tested on OSX
+_C = None
+from numpy.distutils import system_info
+# temporarily mess with environ
+saved_environ = os.environ.copy()
+if sys.platform == 'win32':
+    ld_library_path = 'PATH'
+    so_prefix = ''
+    so_suffix = 'dll'
+else:
+    ld_library_path = 'LD_LIBRARY_PATH'
+    so_prefix = 'lib'
+    so_suffix = 'so'
+for lapack, prefix, suffix in [ \
+                ['openblas_lapack', '', '_'],
+                ['lapack_mkl', '', '_' ],
+                ['lapack', '', '_'],
+                ['lapack_lite', '', '_'],
+                ]:
+    si = getattr(system_info, 'lapack_info')()
+    libs = si.get_lib_dirs()
+    if len(libs) > 0:
+        os.environ[ld_library_path] = os.pathsep.join(libs + [os.environ.get(ld_library_path, '')])
+    try:
+        _C = ffi.dlopen(lapack)
+        macros['sfx'] = suffix
+        macros['pfx'] = prefix
+        break
+    except Exception as e:
         pass
-    nt = Dummy()
-    nt.int32 = dtype('int32')
-    nt.int8 = dtype('int8')
-    nt.float32 = dtype('float32')
-    nt.float64 = dtype('float64')
-    nt.complex64 = dtype('complex64')
-    nt.complex128 = dtype('complex128')
-    from numpy.core.umath import frompyfunc
-    __version__ = '0.1.4'
+# workaround for a distutils bugs where some env vars can
+# become longer and longer every time it is used
+for key, value in saved_environ.items():
+    if os.environ.get(key) != value:
+        os.environ[key] = value
+if _C is None:
+    shared_name = os.path.abspath(os.path.dirname(__file__)) + '/' + \
+                        so_prefix + 'lapack_lite.' + so_suffix
+    if not os.path.exists(shared_name):
+        # cffi should support some canonical name formatting like
+        # distutils.ccompiler.library_filename()
+        raise ValueError('could not find "%s", perhaps the name is slightly off' % shared_name)
+    try:
+        _C = ffi.dlopen(shared_name)
+        warnings.warn('tuned lapack (openblas, atlas ...) not found, using lapack_lite')
+    except:
+        raise NotImplementedError("numpy installation failure: "
+                                  "no lapack_lite compiled python module and "
+                                  "no lapack shared object")
 
-    macros = {'sfx': '_', 'pfx': ''}
-    ffi = cffi.FFI()
-
-
-    # The next section is a hack to find the lapack implementation, loosly based on
-    # numpy.distutils.system_info.get_info. The idea is to use a site.cfg file to specify
-    # where the shared object is located. Note that we need the lapack (high-level) interface,
-    # they in turn call a low-level implementation maybe using blas or atlas.
-    # This has not been tested on OSX
-    _C = None
-    from numpy.distutils import system_info
-    # temporarily mess with environ
-    saved_environ = os.environ.copy()
-    if sys.platform == 'win32':
-        ld_library_path = 'PATH'
-        so_prefix = ''
-        so_suffix = 'dll'
-    else:
-        ld_library_path = 'LD_LIBRARY_PATH'
-        so_prefix = 'lib'
-        so_suffix = 'so'
-    for lapack, prefix, suffix in [ \
-                    ['openblas_lapack', '', '_'],
-                    ['lapack_mkl', '', '_' ],
-                    ['lapack', '', '_'],
-                    ['lapack_lite', '', '_'],
-                  ]:
-        si = getattr(system_info, 'lapack_info')()
-        libs = si.get_lib_dirs()
-        if len(libs) > 0:
-            os.environ[ld_library_path] = os.pathsep.join(libs + [os.environ.get(ld_library_path, '')])
-        try:
-            _C = ffi.dlopen(lapack)
-            macros['sfx'] = suffix
-            macros['pfx'] = prefix
-            break
-        except Exception as e:
-            pass
-    # workaround for a distutils bugs where some env vars can
-    # become longer and longer every time it is used
-    for key, value in saved_environ.items():
-        if os.environ.get(key) != value:
-            os.environ[key] = value
-    if _C is None:
-        shared_name = os.path.abspath(os.path.dirname(__file__)) + '/' + \
-                            so_prefix + 'lapack_lite.' + so_suffix
-        if not os.path.exists(shared_name):
-            # cffi should support some canonical name formatting like
-            # distutils.ccompiler.library_filename()
-            raise ValueError('could not find "%s", perhaps the name is slightly off' % shared_name)
-        try:
-            _C = ffi.dlopen(shared_name)
-            warnings.warn('tuned lapack (openblas, atlas ...) not found, using lapack_lite')
-        except:
-            warnings.warn("no lapack nor lapack_lite shared object available, will try cpyext version next")
-            use_cffi = False
-
-if not use_cffi:
-    raise NotImplementedError("numpy installation failure: no lapack_lite compiled python module and no lapack shared object")
 
 ffi.cdef('''
 /*
