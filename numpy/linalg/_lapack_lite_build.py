@@ -350,4 +350,15 @@ extern int
 extern int
 {pfx}zgeqrf{sfx}(int *, int *, f2c_doublecomplex *, int *,
          f2c_doublecomplex *, f2c_doublecomplex *, int *, int *);
+
+extern int
+{pfx}dorgqr{sfx}(int *m, int *n, int *k, double a[], int *lda,
+                          double tau[], double work[],
+                          int *lwork, int *info);
+
+extern int
+{pfx}zungqr{sfx}(int *m, int *n, int *k, f2c_doublecomplex a[],
+                          int *lda, f2c_doublecomplex tau[],
+                          f2c_doublecomplex work[], int *lwork, int *info);
+
 '''.format(**macros))
