@@ -4,14 +4,10 @@
 # with the final arguments, no broadcasting needed.
 
 import sys, os
-import lapack_lite
-
 import cffi
-ffi = lapack_lite.ffi
 
-umath_ffi = cffi.FFI()
-
-umath_ffi.cdef('''
+ffi = cffi.FFI()
+ffi.cdef('''
     void init_constants(void);
     int _npy_clear_floatstatus(void);
     int _npy_set_floatstatus_invalid(void);
@@ -31,14 +27,14 @@ for name in base_four_names:
 for name in base_three_names:
     names += [pre + name for pre in three]
 for name in names:
-    umath_ffi.cdef(ufunc_cdef % name)
+    ffi.cdef(ufunc_cdef % name)
 
 # TODO macos?
 if sys.platform == 'win32':
     so_name = '/umath_linalg_cffi.dll'
 else:
     so_name = '/libumath_linalg_cffi.so'
-umath_linalg_capi = umath_ffi.dlopen(os.path.dirname(__file__) + so_name)
+umath_linalg_capi = ffi.dlopen(os.path.dirname(__file__) + so_name)
 umath_linalg_capi.init_constants()
 
 import numpy as np
@@ -63,11 +59,11 @@ toCtypeA = {nt.int32: 'int[1]', nt.float32: 'float[1]', nt.float64: 'double[1]',
 
 def toCharP(src):
     if src is None:
-        return umath_ffi.cast('void*', 0)
+        return ffi.cast('void*', 0)
     pData = src.__array_interface__['data'][0]
-    return umath_ffi.cast('char *', pData)
+    return ffi.cast('char *', pData)
 
-umath_ffi.VOIDP = umath_ffi.cast('void *', 0)
+ffi.VOIDP = ffi.cast('void *', 0)
 
 npy_clear_floatstatus = umath_linalg_capi._npy_clear_floatstatus
 npy_set_floatstatus_invalid = umath_linalg_capi._npy_set_floatstatus_invalid
@@ -93,9 +89,9 @@ def wrap_slogdet(typ0, typ1, func):
         sign = ffi.new(toCtypeA[typ0])
         logdet = ffi.new(toCtypeA[typ1])
         f_args = [toCharP(in0), ffi.cast('char*', sign), ffi.cast('char*', logdet)]
-        dims = umath_ffi.new('intptr_t[2]', [1, n])
-        steps = umath_ffi.new('intptr_t[5]', [1, 1, 1, in0.strides[0], in0.strides[1]])
-        func(f_args, dims, steps, umath_ffi.VOIDP)
+        dims = ffi.new('intptr_t[2]', [1, n])
+        steps = ffi.new('intptr_t[5]', [1, 1, 1, in0.strides[0], in0.strides[1]])
+        func(f_args, dims, steps, ffi.VOIDP)
         return sign[0], logdet[0]
     return slogdet
 
@@ -116,9 +112,9 @@ def wrap_det(typ, func):
         n = in0.shape[0]
         retval = ffi.new(toCtypeA[typ])
         f_args = [toCharP(in0), ffi.cast('char*', retval)]
-        dims = umath_ffi.new('intptr_t[2]', [1, n])
-        steps = umath_ffi.new('intptr_t[4]', [1, 1, in0.strides[0], in0.strides[1]])
-        func(f_args, dims, steps, umath_ffi.VOIDP)
+        dims = ffi.new('intptr_t[2]', [1, n])
+        steps = ffi.new('intptr_t[4]', [1, 1, in0.strides[0], in0.strides[1]])
+        func(f_args, dims, steps, ffi.VOIDP)
         return retval[0]
     return det
 
@@ -157,15 +153,15 @@ def wrap_1inVoutMout(func):
     def MinVoutMout(in0, *out):
         n = in0.shape[0]
         f_args = [toCharP(in0)] + [toCharP(o) for o in out]
-        dims = umath_ffi.new('intptr_t[2]', [1, n])
-        steps = umath_ffi.new('intptr_t[8]')
+        dims = ffi.new('intptr_t[2]', [1, n])
+        steps = ffi.new('intptr_t[8]')
         steps[0:3] = [1] * 3
         steps[3] = in0.strides[0]
         steps[4] = in0.strides[1]
         steps[5] = out[0].strides[0]
         steps[6] = out[1].strides[0]
         steps[7] = out[1].strides[1]
-        func(f_args, dims, steps, umath_ffi.VOIDP)
+        func(f_args, dims, steps, ffi.VOIDP)
     return MinVoutMout
 
 def wrap_1inVout(func):
@@ -173,13 +169,13 @@ def wrap_1inVout(func):
         n = in0.shape[0]
         m = in0.shape[1]
         f_args = [toCharP(in0), toCharP(out)]
-        dims = umath_ffi.new('intptr_t[3]', [1, n, m])
-        steps = umath_ffi.new('intptr_t[8]')
+        dims = ffi.new('intptr_t[3]', [1, n, m])
+        steps = ffi.new('intptr_t[8]')
         steps[0:2] = [1, 1]
         steps[2] = in0.strides[0]
         steps[3] = in0.strides[1]
         steps[4] = out.strides[0]
-        func(f_args, dims, steps, umath_ffi.VOIDP)
+        func(f_args, dims, steps, ffi.VOIDP)
     return MinVout
 
 eigh_lo_funcs = \
@@ -253,11 +249,11 @@ def wrap_solve(func):
         out0stride = out0.strides
         f_args = [toCharP(in0), toCharP(in1), toCharP(out0)]
 
-        dims = umath_ffi.new('intptr_t[3]', [1, n, nrhs])
-        steps = umath_ffi.new('intptr_t[9]', [1, 1, 1, in0stride[0], in0stride[1],
+        dims = ffi.new('intptr_t[3]', [1, n, nrhs])
+        steps = ffi.new('intptr_t[9]', [1, 1, 1, in0stride[0], in0stride[1],
                                     in1stride[0], in1stride[1],
                                     out0stride[0], out0stride[1]])
-        func(f_args, dims, steps, umath_ffi.VOIDP)
+        func(f_args, dims, steps, ffi.VOIDP)
     return solve
 
 solve_funcs = \
@@ -270,10 +266,10 @@ def wrap_solve1(func):
         in1stride = in1.strides
         out0stride = out0.strides
         f_args = [toCharP(in0), toCharP(in1), toCharP(out0)]
-        dims = umath_ffi.new('intptr_t[2]', [1, n])
-        steps = umath_ffi.new('intptr_t[7]', [1, 1, 1, in0stride[0], in0stride[1],
+        dims = ffi.new('intptr_t[2]', [1, n])
+        steps = ffi.new('intptr_t[7]', [1, 1, 1, in0stride[0], in0stride[1],
                                     in1stride[0], out0stride[0]])
-        func(f_args, dims, steps, umath_ffi.VOIDP)
+        func(f_args, dims, steps, ffi.VOIDP)
     return solve1
 
 solve1_funcs = \
@@ -285,10 +281,10 @@ def wrap_1in1out(func):
         instride = inarg.strides
         outstride = outarg.strides
         f_args = [toCharP(inarg), toCharP(outarg)]
-        dims = umath_ffi.new('intptr_t[2]', [1, n])
-        steps = umath_ffi.new('intptr_t[6]', [1, 1, instride[0], instride[1],
+        dims = ffi.new('intptr_t[2]', [1, n])
+        steps = ffi.new('intptr_t[6]', [1, 1, instride[0], instride[1],
                                     outstride[0], outstride[1]])
-        func(f_args, dims, steps, umath_ffi.VOIDP)
+        func(f_args, dims, steps, ffi.VOIDP)
     return one_in_one_out
 
 inv_funcs = \
@@ -384,8 +380,8 @@ def wrap_1inMoutVoutMout(func):
         m = in0.shape[0]
         n = in0.shape[1]
         f_args = [toCharP(in0)] + [toCharP(o) for o in out]
-        dims = umath_ffi.new('intptr_t[3]', [1, m, n])
-        steps = umath_ffi.new('intptr_t[11]')
+        dims = ffi.new('intptr_t[3]', [1, m, n])
+        steps = ffi.new('intptr_t[11]')
         steps[0:4] = [1] * 4
         steps[4]  = in0.strides[0]
         steps[5]  = in0.strides[1]
@@ -394,7 +390,7 @@ def wrap_1inMoutVoutMout(func):
         steps[8]  = out[1].strides[0]
         steps[9]  = out[2].strides[0]
         steps[10] = out[2].strides[1]
-        func(f_args, dims, steps, umath_ffi.VOIDP)
+        func(f_args, dims, steps, ffi.VOIDP)
     return MinMoutVoutMout
 
 svd_m_funcs = [wrap_1inVout(getattr(umath_linalg_capi, f + 'svd_N')) for f in all_four]
