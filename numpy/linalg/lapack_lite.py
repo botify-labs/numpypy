@@ -1,8 +1,12 @@
 # A CFFI version of numpy/linalg/lapack_module.c
-from ._lapack_lite_build import ffi, macros, _C
+from ._lapack_lite import ffi, lib
 import numpy as np
 # dtype has not been imported yet
 from numpy.core.multiarray import dtype
+
+# XXX: This should be set during install, but on PyPy, the value is (probably!)
+# always the same.
+macros = {'pfx':'', 'sfx': '_'}
 
 class Dummy(object):
     pass
@@ -56,7 +60,7 @@ def convert_arg(inarg, ffitype):
 def call_func(name):
     c_name = macros['pfx'] + name + macros['sfx']
     def call_with_convert(*args):
-        func = getattr(_C, c_name)
+        func = getattr(lib, c_name)
         fargs = ffi.typeof(func).args
         converted_args = [convert_arg(a,b) for a,b in zip(args, fargs)]
         res = func(*converted_args)

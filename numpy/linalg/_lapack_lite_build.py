@@ -62,7 +62,7 @@ if _C is None:
                                   "no lapack shared object")
 
 
-ffi.cdef('''
+LAPACK_DEFS = ('''
 /*
  *                    LAPACK functions
  */

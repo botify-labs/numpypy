@@ -56,30 +56,17 @@ def configuration(parent_package='',top_path=None):
                          libraries = ['npymath']
                          )
     else:
-        # Use cffi to load shared objects, not modules
-        if not lapack_info:
-            lapack_info = {}
-        if not lapack_info.get('libraries', ''):
-            build_info = {}
-            print("### Warning:  Using unoptimized lapack ###")
-            sources = lapack_lite_src[:-1]
-            build_info['depends'] = sources
-            build_info['macros'] = [('_LAPACK_LITE_DLL', None)]
-            build_info['extra_compiler_args'] = \
-                        lapack_info.get('extra_compiler_args',[])
-
-            if sys.platform == 'darwin':
-                build_info['extra_compiler_args'].extend(
-                        ['-Wl,-install_name,@loader_path/liblapack_lite.so'])
-
-            config.add_shared_library('lapack_lite',
-                         sources = sources,
-                         build_info = build_info,
+        from _lapack_lite_build import ffi, LAPACK_DEFS
+        ffi.cdef(LAPACK_DEFS)
+        ffi.set_source("numpy.linalg._lapack_lite", LAPACK_DEFS)
+        c_source_name = os.path.join(os.path.dirname(__file__), "_lapack_lite.c")
+        ffi.emit_c_code(c_source_name)
+        config.add_extension('_lapack_lite',
+                         sources = [get_lapack_lite_sources],
+                         depends = [c_source_name] + lapack_lite_src,
+                         extra_info = lapack_info
                          )
-            lapack_info['libraries'] = ['lapack_lite',]
-        else:
-            # We will use the lapack available on the platform
-            pass
+
         # link in Python27.lib, on pypy this is in include
         if sys.platform == 'win32':
             library_dirs = [sys.prefix + '/include',
