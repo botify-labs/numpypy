@@ -3,9 +3,10 @@
 # of the pypy extended frompyfunc, so the _umath_linag_capi functions are always called
 # with the final arguments, no broadcasting needed.
 
-from ._umath_linalg_build import ffi, umath_linalg_capi, all_four, three
+from ._umath_linalg_build import all_four, three
+from ._umath_linalg_cffi import ffi, lib
 
-umath_linalg_capi.init_constants()
+lib.init_constants()
 
 import numpy as np
 
@@ -33,10 +34,10 @@ def toCharP(src):
     pData = src.__array_interface__['data'][0]
     return ffi.cast('char *', pData)
 
-ffi.VOIDP = ffi.cast('void *', 0)
+VOIDP = ffi.cast('void *', 0)
 
-npy_clear_floatstatus = umath_linalg_capi._npy_clear_floatstatus
-npy_set_floatstatus_invalid = umath_linalg_capi._npy_set_floatstatus_invalid
+npy_clear_floatstatus = lib._npy_clear_floatstatus
+npy_set_floatstatus_invalid = lib._npy_set_floatstatus_invalid
 
 def get_fp_invalid_and_clear():
     return bool(npy_clear_floatstatus() & np.FPE_INVALID)
@@ -61,18 +62,18 @@ def wrap_slogdet(typ0, typ1, func):
         f_args = [toCharP(in0), ffi.cast('char*', sign), ffi.cast('char*', logdet)]
         dims = ffi.new('intptr_t[2]', [1, n])
         steps = ffi.new('intptr_t[5]', [1, 1, 1, in0.strides[0], in0.strides[1]])
-        func(f_args, dims, steps, ffi.VOIDP)
+        func(f_args, dims, steps, VOIDP)
         return sign[0], logdet[0]
     return slogdet
 
 FLOAT_slogdet  =   wrap_slogdet(nt.float32,   nt.float32,
-                                umath_linalg_capi.FLOAT_slogdet)
+                                lib.FLOAT_slogdet)
 DOUBLE_slogdet  =  wrap_slogdet(nt.float64,   nt.float64,
-                                umath_linalg_capi.DOUBLE_slogdet)
+                                lib.DOUBLE_slogdet)
 CFLOAT_slogdet  =  wrap_slogdet(nt.complex64, nt.float32,
-                                umath_linalg_capi.CFLOAT_slogdet)
+                                lib.CFLOAT_slogdet)
 CDOUBLE_slogdet  = wrap_slogdet(nt.complex128, nt.float64,
-                                umath_linalg_capi.CDOUBLE_slogdet)
+                                lib.CDOUBLE_slogdet)
 
 def wrap_det(typ, func):
     def det(in0):
@@ -84,14 +85,14 @@ def wrap_det(typ, func):
         f_args = [toCharP(in0), ffi.cast('char*', retval)]
         dims = ffi.new('intptr_t[2]', [1, n])
         steps = ffi.new('intptr_t[4]', [1, 1, in0.strides[0], in0.strides[1]])
-        func(f_args, dims, steps, ffi.VOIDP)
+        func(f_args, dims, steps, VOIDP)
         return retval[0]
     return det
 
-FLOAT_det  =   wrap_det(nt.float32,    umath_linalg_capi.FLOAT_det)
-DOUBLE_det  =  wrap_det(nt.float64,    umath_linalg_capi.DOUBLE_det)
-CFLOAT_det  =  wrap_det(nt.complex64,  umath_linalg_capi.CFLOAT_det)
-CDOUBLE_det  = wrap_det(nt.complex128, umath_linalg_capi.CDOUBLE_det)
+FLOAT_det  =   wrap_det(nt.float32,    lib.FLOAT_det)
+DOUBLE_det  =  wrap_det(nt.float64,    lib.DOUBLE_det)
+CFLOAT_det  =  wrap_det(nt.complex64,  lib.CFLOAT_det)
+CDOUBLE_det  = wrap_det(nt.complex128, lib.CDOUBLE_det)
 
 slogdet = frompyfunc([FLOAT_slogdet, DOUBLE_slogdet, CFLOAT_slogdet, CDOUBLE_slogdet],
                         1, 2, dtypes=[nt.float32, nt.float32, nt.float32,
@@ -131,7 +132,7 @@ def wrap_1inVoutMout(func):
         steps[5] = out[0].strides[0]
         steps[6] = out[1].strides[0]
         steps[7] = out[1].strides[1]
-        func(f_args, dims, steps, ffi.VOIDP)
+        func(f_args, dims, steps, VOIDP)
     return MinVoutMout
 
 def wrap_1inVout(func):
@@ -145,17 +146,17 @@ def wrap_1inVout(func):
         steps[2] = in0.strides[0]
         steps[3] = in0.strides[1]
         steps[4] = out.strides[0]
-        func(f_args, dims, steps, ffi.VOIDP)
+        func(f_args, dims, steps, VOIDP)
     return MinVout
 
 eigh_lo_funcs = \
-        [wrap_1inVoutMout(getattr(umath_linalg_capi, f + 'eighlo')) for f in all_four]
+        [wrap_1inVoutMout(getattr(lib, f + 'eighlo')) for f in all_four]
 eigh_up_funcs = \
-        [wrap_1inVoutMout(getattr(umath_linalg_capi, f + 'eighup')) for f in all_four]
+        [wrap_1inVoutMout(getattr(lib, f + 'eighup')) for f in all_four]
 eig_shlo_funcs = \
-        [wrap_1inVout(getattr(umath_linalg_capi, f + 'eigvalshlo')) for f in all_four]
+        [wrap_1inVout(getattr(lib, f + 'eigvalshlo')) for f in all_four]
 eig_shup_funcs = \
-        [wrap_1inVout(getattr(umath_linalg_capi, f + 'eigvalshup')) for f in all_four]
+        [wrap_1inVout(getattr(lib, f + 'eigvalshup')) for f in all_four]
 
 eigh_lo = frompyfunc(eigh_lo_funcs, 1, 2, dtypes=[ \
                                     nt.float32, nt.float32, nt.float32,
@@ -223,11 +224,11 @@ def wrap_solve(func):
         steps = ffi.new('intptr_t[9]', [1, 1, 1, in0stride[0], in0stride[1],
                                     in1stride[0], in1stride[1],
                                     out0stride[0], out0stride[1]])
-        func(f_args, dims, steps, ffi.VOIDP)
+        func(f_args, dims, steps, VOIDP)
     return solve
 
 solve_funcs = \
-        [wrap_solve(getattr(umath_linalg_capi, f + 'solve')) for f in all_four]
+        [wrap_solve(getattr(lib, f + 'solve')) for f in all_four]
 
 def wrap_solve1(func):
     def solve1(in0, in1, out0):
@@ -239,11 +240,11 @@ def wrap_solve1(func):
         dims = ffi.new('intptr_t[2]', [1, n])
         steps = ffi.new('intptr_t[7]', [1, 1, 1, in0stride[0], in0stride[1],
                                     in1stride[0], out0stride[0]])
-        func(f_args, dims, steps, ffi.VOIDP)
+        func(f_args, dims, steps, VOIDP)
     return solve1
 
 solve1_funcs = \
-        [wrap_solve1(getattr(umath_linalg_capi, f + 'solve1')) for f in all_four]
+        [wrap_solve1(getattr(lib, f + 'solve1')) for f in all_four]
 
 def wrap_1in1out(func):
     def one_in_one_out(inarg, outarg):
@@ -254,11 +255,11 @@ def wrap_1in1out(func):
         dims = ffi.new('intptr_t[2]', [1, n])
         steps = ffi.new('intptr_t[6]', [1, 1, instride[0], instride[1],
                                     outstride[0], outstride[1]])
-        func(f_args, dims, steps, ffi.VOIDP)
+        func(f_args, dims, steps, VOIDP)
     return one_in_one_out
 
 inv_funcs = \
-        [wrap_1in1out(getattr(umath_linalg_capi, f + 'inv')) for f in all_four]
+        [wrap_1in1out(getattr(lib, f + 'inv')) for f in all_four]
 
 solve = frompyfunc(solve_funcs, 2, 1, dtypes=[ \
                                     nt.float32, nt.float32, nt.float32,
@@ -299,7 +300,7 @@ inv = frompyfunc(inv_funcs, 1, 1, dtypes=[ \
 # --------------------------------------------------------------------------
 # Cholesky decomposition
 
-cholesky_lo_funcs = [wrap_1in1out(getattr(umath_linalg_capi, f + 'cholesky_lo')) for f in all_four]
+cholesky_lo_funcs = [wrap_1in1out(getattr(lib, f + 'cholesky_lo')) for f in all_four]
 
 cholesky_lo = frompyfunc(cholesky_lo_funcs, 1, 1, dtypes=[ \
                                     nt.float32, nt.float32,
@@ -318,8 +319,8 @@ cholesky_lo = frompyfunc(cholesky_lo_funcs, 1, 1, dtypes=[ \
 #  There are problems with eig in complex single precision.
 #  That kernel is disabled
 
-eig_funcs = [wrap_1inVoutMout(getattr(umath_linalg_capi, f + 'eig')) for f in three]
-eigval_funcs = [wrap_1inVout(getattr(umath_linalg_capi, f + 'eigvals')) for f in three]
+eig_funcs = [wrap_1inVoutMout(getattr(lib, f + 'eig')) for f in three]
+eigval_funcs = [wrap_1inVout(getattr(lib, f + 'eigvals')) for f in three]
 
 eig = frompyfunc(eig_funcs, 1, 2, dtypes=[ \
                                 nt.float32, nt.complex64, nt.complex64,
@@ -360,15 +361,15 @@ def wrap_1inMoutVoutMout(func):
         steps[8]  = out[1].strides[0]
         steps[9]  = out[2].strides[0]
         steps[10] = out[2].strides[1]
-        func(f_args, dims, steps, ffi.VOIDP)
+        func(f_args, dims, steps, VOIDP)
     return MinMoutVoutMout
 
-svd_m_funcs = [wrap_1inVout(getattr(umath_linalg_capi, f + 'svd_N')) for f in all_four]
-svd_n_funcs = [wrap_1inVout(getattr(umath_linalg_capi, f + 'svd_N')) for f in all_four]
-svd_m_s_funcs = [wrap_1inMoutVoutMout(getattr(umath_linalg_capi, f + 'svd_S')) for f in all_four]
-svd_n_s_funcs = [wrap_1inMoutVoutMout(getattr(umath_linalg_capi, f + 'svd_S')) for f in all_four]
-svd_m_f_funcs = [wrap_1inMoutVoutMout(getattr(umath_linalg_capi, f + 'svd_A')) for f in all_four]
-svd_n_f_funcs = [wrap_1inMoutVoutMout(getattr(umath_linalg_capi, f + 'svd_A')) for f in all_four]
+svd_m_funcs = [wrap_1inVout(getattr(lib, f + 'svd_N')) for f in all_four]
+svd_n_funcs = [wrap_1inVout(getattr(lib, f + 'svd_N')) for f in all_four]
+svd_m_s_funcs = [wrap_1inMoutVoutMout(getattr(lib, f + 'svd_S')) for f in all_four]
+svd_n_s_funcs = [wrap_1inMoutVoutMout(getattr(lib, f + 'svd_S')) for f in all_four]
+svd_m_f_funcs = [wrap_1inMoutVoutMout(getattr(lib, f + 'svd_A')) for f in all_four]
+svd_n_f_funcs = [wrap_1inMoutVoutMout(getattr(lib, f + 'svd_A')) for f in all_four]
 
 
 svd_m = frompyfunc(svd_m_funcs, 1, 1, dtypes=[ \
