@@ -16,6 +16,10 @@ or without a git checkout::
 If you get a message about `missing Python.h` you must install the pypy-dev
 package for your system
 
+If you get a message about "unable to find vcvarsall.bat", you need to install
+install a compiler. Microsoft has a download for that at 
+http://www.microsoft.com/en-us/download/details.aspx?id=44266
+
 If you installed to a system directory, you may need to run::
 
     sudo pypy -c 'import numpy'
