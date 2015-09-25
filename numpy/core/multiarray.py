@@ -102,7 +102,6 @@ int_asbuffer set_numeric_ops can_cast promote_types
 min_scalar_type lexsort compare_chararrays putmask einsum inner
 _vec_string datetime_data correlate correlate2
 datetime_as_string busday_offset busday_count is_busday busdaycalendar
-_flagdict
 '''.split():
     if name not in globals():
         globals()[name] = NotImplementedFunc(name)
@@ -112,3 +111,10 @@ nditer flagsobj
 '''.split():
     if name not in globals():
         globals()[name] = NotImplementedType(name)
+
+# As a fallback, use cnumpy 1.9.2 _flagdict
+if '_flagdict' not in globals():
+    _flagdict = {'A': 256, 'ALIGNED': 256, 'C': 1, 'CONTIGUOUS': 1,
+                 'C_CONTIGUOUS': 1, 'F': 2, 'FORTRAN': 2, 'F_CONTIGUOUS': 2,
+                 'O': 4, 'OWNDATA': 4, 'U': 4096, 'UPDATEIFCOPY': 4096,
+                 'W': 1024, 'WRITEABLE': 1024}
