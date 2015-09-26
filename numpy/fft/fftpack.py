@@ -38,7 +38,6 @@ __all__ = ['fft', 'ifft', 'rfft', 'irfft', 'hfft', 'ihfft', 'rfftn',
 from numpy.core import asarray, zeros, swapaxes, shape, conjugate, \
      take
 from . import fft_cffi
-from . import fftpack_lite as fftpack
 
 _fft_cache = {}
 _real_fft_cache = {}
@@ -253,7 +252,7 @@ def ifft(a, n=None, axis=-1):
     a = asarray(a).astype(complex)
     if n is None:
         n = shape(a)[axis]
-    return _raw_fft(a, n, axis, fftpack.cffti, fftpack.cfftb, _fft_cache) / n
+    return _raw_fft(a, n, axis, fft_cffi.cffti, fft_cffi.cfftb, _fft_cache) / n
 
 
 def rfft(a, n=None, axis=-1):
@@ -332,7 +331,7 @@ def rfft(a, n=None, axis=-1):
     """
 
     a = asarray(a).astype(float)
-    return _raw_fft(a, n, axis, fftpack.rffti, fftpack.rfftf, _real_fft_cache)
+    return _raw_fft(a, n, axis, fft_cffi.rffti, fft_cffi.rfftf, _real_fft_cache)
 
 
 def irfft(a, n=None, axis=-1):
@@ -415,7 +414,7 @@ def irfft(a, n=None, axis=-1):
     a = asarray(a).astype(complex)
     if n is None:
         n = (shape(a)[axis] - 1) * 2
-    return _raw_fft(a, n, axis, fftpack.rffti, fftpack.rfftb,
+    return _raw_fft(a, n, axis, fft_cffi.rffti, fft_cffi.rfftb,
                     _real_fft_cache) / n
 
 
