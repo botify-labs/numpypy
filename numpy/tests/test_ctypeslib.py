@@ -10,7 +10,7 @@ from numpy.testing import *
 try:
     cdll = load_library('multiarray', np.core.multiarray.__file__)
     _HAS_CTYPE = True
-except ImportError:
+except (ImportError, OSError):
     _HAS_CTYPE = False
 
 class TestLoadLibrary(TestCase):
