@@ -83,18 +83,15 @@ def configuration(parent_package='',top_path=None):
             library_dirs = []
             extra_compiler_args = ['-Wl,-rpath=\'$ORIGIN\'']
             macros = [('_UMATH_LINALG_CAPI_DLL', None)]
-        from _umath_linalg_build import ffi
-        ffi.set_source('numpy.linalg._umath_linalg_cffi',
-                       '#include "../../build/src.linux-x86_64-2.7/numpy/linalg/umath_linalg.c"')
-        c_source_name = os.path.join(os.path.dirname(__file__), "_umath_linalg_cffi.c")
-        ffi.emit_c_code(c_source_name)
-        lapack_info['language'] = 'c'
-        config.add_extension('_umath_linalg_cffi',
-                         sources=[get_lapack_lite_sources],
-                         depends=[c_source_name] + lapack_lite_src,
-                         extra_info=lapack_info,
-                         libraries=['npymath'],
-                         )
+        config.add_shared_library('umath_linalg_cffi',
+                sources = ['umath_linalg.c.src'],
+                build_info = {'depends': ['umath_linalg.c.src'],
+                      'libraries':  ['npymath'] + lapack_info.get('libraries',[]),
+                      'library_dirs':  library_dirs,
+                      'macros': macros,
+                      'extra_compiler_args': extra_compiler_args,
+                              }
+                )
     return config
 
 if __name__ == '__main__':
