@@ -1575,7 +1575,7 @@ def cfftb(a, wsave):
         #print 'npts,i,a.shape',npts,i,a.shape,a.dtype
         data_cdata = ffi.cast('double*', dptr)
         C.cfftb(n, data_cdata, ffi.cast('double*', wsave_ptr))
-        dptr += npts *2 * ffi.sizeof('double')
+        dptr += npts * 2 * ffi.sizeof('double')
     return data
 
 def rfftf(a, wsave):
@@ -1597,14 +1597,15 @@ def rfftf(a, wsave):
     n = ffi.cast('int', npts)
     wsave_ptr = ffi.cast('double *', wsave.__array_interface__['data'][0])
     rptr = ret.__array_interface__['data'][0]
+    double_t = ffi.sizeof('double')
     for i in range(nrepeats):
         start = i * rstep
         dstart = i * npts
         ret_d.flat[start + 1: start + 1 + npts] = data.flat[dstart:dstart + npts]
-        C.rfftf(n, ffi.cast('double *', rptr + 1), wsave_ptr)
+        C.rfftf(n, ffi.cast('double *', rptr + double_t), wsave_ptr)
         ret_d.flat[start] = ret_d.flat[start + 1]
         ret_d.flat[start + 1] = 0.0
-        rptr += rstep
+        rptr += rstep * double_t
     return ret
 
 def rfftb(a, wsave):
@@ -1629,7 +1630,7 @@ def rfftb(a, wsave):
         ret.flat[start + 1: start + npts] = data_double.flat[dstart + 2:dstart + npts + 1]
         ret.flat[start] = data_double.flat[dstart]
         C.rfftb(n, ffi.cast('double *', rptr), wsave_ptr)
-        rptr += npts
+        rptr += npts * ffi.sizeof('double')
     return ret
 
        
