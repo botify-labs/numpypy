@@ -5,14 +5,7 @@
 import os, sys
 
 from ._umath_linalg_build import all_four, three
-from ._umath_linalg_cffi import ffi
-
-# TODO macos?
-if sys.platform == 'win32':
-    so_name = '/umath_linalg_cffi.dll'
-else:
-    so_name = '/libumath_linalg_cffi.so'
-lib = ffi.dlopen(os.path.dirname(__file__) + so_name)
+from ._umath_linalg_cffi import ffi, lib
 
 lib.init_constants()
 

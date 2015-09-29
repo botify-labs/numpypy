@@ -25,3 +25,4 @@ for name in names:
     defs.append(ufunc_cdef % name)
 defs = '\n'.join(defs)
 ffi.cdef(defs)
+ffi.set_source('numpy.linalg._umath_linalg_cffi', defs)
