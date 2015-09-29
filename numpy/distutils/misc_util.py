@@ -1454,6 +1454,68 @@ class Configuration(object):
                       ' it may be too late to add an extension '+name)
         return ext
 
+    def add_cffi_extension(self, ffi, sources, **kw):
+        """Add extension to configuration.
+
+        Create and add an Extension instance to the ext_modules list. This
+        method also takes the following optional keyword arguments that are
+        passed on to the Extension constructor.
+
+        Parameters
+        ----------
+        name : str
+            name of the extension
+        ffi: cffi.FFI
+            cffi.FFI object configured for API-mode use. ffi.set_source() and
+            ffi.cdef() must have been called.
+        sources : seq
+            list of the sources. The list of sources may contain functions
+            (called source generators) which must take an extension instance
+            and a build directory as inputs and return a source file or list of
+            source files or None. If None is returned then no sources are
+            generated. If the Extension instance has no sources after
+            processing all source generators, then no extension module is
+            built.
+        include_dirs :
+        define_macros :
+        undef_macros :
+        library_dirs :
+        libraries :
+        runtime_library_dirs :
+        extra_objects :
+        extra_compile_args :
+        extra_link_args :
+        extra_f77_compile_args :
+        extra_f90_compile_args :
+        export_symbols :
+        swig_opts :
+        depends :
+            The depends list contains paths to files or directories that the
+            sources of the extension module depend on. If any path in the
+            depends list is newer than the extension module, then the module
+            will be rebuilt.
+        language :
+        f2py_options :
+        module_dirs :
+        extra_info : dict or list
+            dict or list of dict of keywords to be appended to keywords.
+
+        Notes
+        -----
+        The self.paths(...) method is applied to all lists that may contain
+        paths.
+        """
+        full_name = ffi._assigned_source[0]
+        package, name = full_name.rsplit('.', 1)
+        if package != self.name:
+            raise ValueError(
+                "Mismatch between the name of the FFI extension, %r, and the "
+                "current package, %r" % (full_name, self.name))
+        c_source_name = njoin(self.package_path, '{name}.c'.format(name=name))
+        ffi.emit_c_code(c_source_name)
+        sources = sources + [c_source_name]
+        self.add_extension(name, sources, **kw)
+
     def add_library(self,name,sources,**build_info):
         """
         Add library to configuration.
@@ -1558,7 +1620,7 @@ class Configuration(object):
         # Add to libraries list so that it is build with build_clib
         self.libraries.append((name, self._add_library(name, sources, None, build_info)))
         self.installed_libraries.append(InstallableLib(name, build_info, install_dir))
-    
+
     def add_shared_library(self, name, sources, install_dir='.', build_info=None):
         """
         Similar to add_library, but build a shared object instead (*.so, *.dll)
@@ -1610,7 +1672,7 @@ class Configuration(object):
         # Add to shared_libraries list so that it is build with build_clib
         _build_info = self._add_library(name, sources, None, build_info)
         self.shared_libraries.append((name, _build_info, install_dir))
- 
+
     def add_npy_pkg_config(self, template, install_dir, subst_dict=None):
         """
         Generate and install a npy-pkg config file from a template.
