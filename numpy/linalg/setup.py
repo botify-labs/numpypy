@@ -57,8 +57,6 @@ def configuration(parent_package='',top_path=None):
                          )
     else:
         from _lapack_lite_build import ffi, LAPACK_DEFS
-        ffi.cdef(LAPACK_DEFS)
-        ffi.set_source("numpy.linalg._lapack_lite", LAPACK_DEFS)
         c_source_name = os.path.join(os.path.dirname(__file__), "_lapack_lite.c")
         ffi.emit_c_code(c_source_name)
         config.add_extension('_lapack_lite',
