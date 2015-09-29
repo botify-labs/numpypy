@@ -305,7 +305,3 @@ ffi.set_source(
 #include "mtrand/randomkit.h"
 #include "mtrand/distributions.h"
 """)
-
-if __name__ == '__main__':
-    c_source_name = join(dirname(__file__), "_mtrand.c")
-    ffi.emit_c_code(c_source_name)

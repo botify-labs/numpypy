@@ -47,7 +47,9 @@ def configuration(parent_package='',top_path=None):
     except ImportError:
         have_cffi = False
     if have_cffi:
-        #create the dll/so for the cffi version
+        from _mtrand_build import ffi
+        c_source_name = join(dirname(__file__), "_mtrand.c")
+        ffi.emit_c_code(c_source_name)
         if sys.platform == 'win32':
             libs.append('Advapi32')
             defs.append(('_MTRAND_DLL',None))
@@ -55,7 +57,7 @@ def configuration(parent_package='',top_path=None):
             sources=(
                 [join('mtrand', x) for x in
                  ['randomkit.c', 'distributions.c', 'initarray.c']] +
-                ['_mtrand.c']),
+                [c_source_name]),
             libraries=libs,
             depends=[join('mtrand', '*.h')],
             define_macros=defs)
