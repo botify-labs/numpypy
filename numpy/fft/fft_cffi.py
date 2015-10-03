@@ -1,5 +1,5 @@
 import numpy as np
-from ._fft_build import ffi, lib
+from ._fft_cffi import ffi, lib
 
 def cffti(n):
     '''

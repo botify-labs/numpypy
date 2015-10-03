@@ -12,7 +12,7 @@ void rfftb(int n, double r[], double wsave[]);
 ''')
 
 
-lib = ffi.verify('''
+ffi.set_source('numpy.fft._fft_cffi', '''
 /*
 fftpack.c : A set of FFT routines in C.
 Algorithmically based on Fortran-77 FFTPACK by Paul N. Swarztrauber (Version 4, 1985).
@@ -1514,4 +1514,4 @@ void rffti(int n, Treal wsave[])
 #ifdef __cplusplus
 }
 #endif
-''', libraries=[])
+''')
