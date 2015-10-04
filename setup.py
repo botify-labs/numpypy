@@ -102,6 +102,7 @@ if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 # a lot more robust than what was previously being used.
 builtins.__NUMPY_SETUP__ = True
 
+PYPY = '__pypy__' in sys.builtin_module_names
 
 def get_version_info():
     # Adding the git rev number needs to be done inside write_version_py(),
@@ -248,7 +249,7 @@ def setup_package():
             import setuptools
         from numpy.distutils.core import setup
         cwd = os.path.abspath(os.path.dirname(__file__))
-        if not os.path.exists(os.path.join(cwd, 'PKG-INFO')):
+        if not PYPY and not os.path.exists(os.path.join(cwd, 'PKG-INFO')):
             # Generate Cython sources, unless building from source release
             generate_cython()
         metadata['configuration'] = configuration

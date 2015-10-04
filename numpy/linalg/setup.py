@@ -56,55 +56,40 @@ def configuration(parent_package='',top_path=None):
                          libraries = ['npymath']
                          )
     else:
-        # Use cffi to load shared objects, not modules
-        if not lapack_info:
-            lapack_info = {}
-        if not lapack_info.get('libraries', ''):
-            build_info = {}
-            print("### Warning:  Using unoptimized lapack ###")
-            sources = lapack_lite_src[:-1]
-            build_info['depends'] = sources
-            build_info['macros'] = [('_LAPACK_LITE_DLL', None)]
-            build_info['extra_compiler_args'] = \
-                        lapack_info.get('extra_compiler_args',[])
-
-            if sys.platform == 'darwin':
-                build_info['extra_compiler_args'].extend(
-                        ['-Wl,-install_name,@loader_path/liblapack_lite.so'])
-
-            config.add_shared_library('lapack_lite',
-                         sources = sources,
-                         build_info = build_info,
+        from _lapack_lite_build import ffi, LAPACK_DEFS
+        c_source_name = os.path.join(os.path.dirname(__file__), "_lapack_lite.c")
+        ffi.emit_c_code(c_source_name)
+        config.add_extension('_lapack_lite',
+                         sources = [get_lapack_lite_sources],
+                         depends = [c_source_name] + lapack_lite_src,
+                         extra_info = lapack_info
                          )
-            lapack_info['libraries'] = ['lapack_lite',]
-        else:
-            # We will use the lapack available on the platform
-            pass
+
         # link in Python27.lib, on pypy this is in include
         if sys.platform == 'win32':
             library_dirs = [sys.prefix + '/include',
                             sys.prefix + '/Libs']
-            extra_compiler_args = []
             macros = [('_UMATH_LINALG_CAPI_DLL', None)]
         elif sys.platform == 'darwin':
             library_dirs = []
-            extra_compiler_args = lapack_info.get('extra_compile_args', []) + \
-                                  lapack_info.get('extra_link_args', [])
             macros = [('_UMATH_LINALG_CAPI_DLL', None)] + lapack_info.get(
                       'define_macros', [])
         else:
             library_dirs = []
-            extra_compiler_args = ['-Wl,-rpath=\'$ORIGIN\'']
             macros = [('_UMATH_LINALG_CAPI_DLL', None)]
-        config.add_shared_library('umath_linalg_cffi',
-                sources = ['umath_linalg.c.src'],
-                build_info = {'depends': ['umath_linalg.c.src'],
-                      'libraries':  ['npymath'] + lapack_info.get('libraries',[]),
-                      'library_dirs':  library_dirs,
-                      'macros': macros,
-                      'extra_compiler_args': extra_compiler_args,
-                              }
-                )
+        from _umath_linalg_build import ffi
+        c_source_name = os.path.join(os.path.dirname(__file__),
+                                     "_umath_linalg_cffi.c")
+        ffi.emit_c_code(c_source_name)
+
+        config.add_extension(
+            '_umath_linalg_cffi',
+            sources=[get_lapack_lite_sources, 'umath_linalg.c.src'],
+            depends=[c_source_name] + lapack_lite_src,
+            libraries=['npymath'],
+            library_dirs=library_dirs,
+            define_macros=macros,
+            extra_info=lapack_info)
     return config
 
 if __name__ == '__main__':

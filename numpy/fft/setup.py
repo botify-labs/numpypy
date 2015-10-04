@@ -13,7 +13,9 @@ def configuration(parent_package='',top_path=None):
         config.add_extension('fftpack_lite',
                          sources=['fftpack_litemodule.c', 'fftpack.c']
                          )
-
+    else:
+        from _fft_build import ffi
+        config.add_cffi_extension(ffi, sources=['fftpack.c'])
 
     return config
 
