@@ -1,5 +1,14 @@
 from __future__ import division, absolute_import, print_function
 
+try:
+    # Distutils cannot find the Microsoft MSVC compiler as installed
+    # from the Microsoft Python Compiler package, but setuptools can.
+    # importing setuptools later (i.e. building with cffi) causes build
+    # to fail
+    import setuptools
+except ImportError:
+    pass
+
 import sys
 from distutils.core import *
 
