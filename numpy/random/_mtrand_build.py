@@ -164,7 +164,7 @@ init_by_array(rk_state *self, unsigned long * init_key,
  *
  * Marsaglia, G. and Tsang, W. W. A Simple Method for Generating Gamma
  * Variables. ACM Transactions on Mathematical Software, Vol. 26, No. 3,
- * September 2000, Pages 363–372.
+ * September 2000, Pages 363-372.
  */
 
 /* Normal distribution with mean=loc and standard deviation=scale. */
