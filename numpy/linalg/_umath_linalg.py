@@ -26,9 +26,6 @@ nt.complex128 = dtype('complex128')
 from numpy.core.umath import frompyfunc
 __version__ = '0.1.4'
 
-toCtypeA = {nt.int32: 'int[1]', nt.float32: 'float[1]', nt.float64: 'double[1]',
-            nt.complex64: 'f2c_complex[1]', nt.complex128: 'f2c_doublecomplex[1]'}
-
 def toCharP(src):
     if src is None:
         return ffi.cast('void*', 0)
@@ -58,9 +55,9 @@ def wrap_slogdet(typ0, typ1, func):
             *   in must have shape [m, m], out[0] and out[1] scalar
         '''
         n = in0.shape[0]
-        sign = ffi.new(toCtypeA[typ0])
-        logdet = ffi.new(toCtypeA[typ1])
-        f_args = [toCharP(in0), ffi.cast('char*', sign), ffi.cast('char*', logdet)]
+        sign = np.empty(1, typ0)
+        logdet = np.empty(1, typ1)
+        f_args = [toCharP(in0), toCharP(sign), toCharP(logdet)]
         dims = ffi.new('intptr_t[2]', [1, n])
         steps = ffi.new('intptr_t[5]', [1, 1, 1, in0.strides[0], in0.strides[1]])
         func(f_args, dims, steps, VOIDP)
@@ -82,12 +79,12 @@ def wrap_det(typ, func):
             *   in must have shape [m, m], out is scalar
         '''
         n = in0.shape[0]
-        retval = ffi.new(toCtypeA[typ])
-        f_args = [toCharP(in0), ffi.cast('char*', retval)]
+        retval = np.empty([1],typ)
+        f_args = [toCharP(in0), toCharP(retval)]
         dims = ffi.new('intptr_t[2]', [1, n])
         steps = ffi.new('intptr_t[4]', [1, 1, in0.strides[0], in0.strides[1]])
         func(f_args, dims, steps, VOIDP)
-        return retval[0]
+        return retval
     return det
 
 FLOAT_det  =   wrap_det(nt.float32,    lib.FLOAT_det)
