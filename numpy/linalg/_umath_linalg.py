@@ -212,7 +212,7 @@ eigvalsh_up = frompyfunc(eig_shup_funcs, 1, 1, dtypes=[ \
 def wrap_solve(func):
     def solve(in0, in1, out0):
         n = in0.shape[0]
-        nrhs = in1.shape[0]
+        nrhs = in1.shape[1]
         in0stride = in0.strides
         in1stride = in1.strides
         out0stride = out0.strides
