@@ -1,5 +1,5 @@
-Welcome to PyPy's fork of Numpy. In order to install, first
-install pypy, hints are here http://pypy.org/download.html. Note this is 
+Welcome to PyPy's fork of Numpy, *NumPyPy*. In order to install, first
+install PyPy, hints are here http://pypy.org/download.html. Note this is 
 a binary install, no lengthy translation or compilation necessary. Once you
 have pypy working and feel comfortable using it, you can install our version
 of the numpy module into a virtual environment in a separate directory::
@@ -26,12 +26,19 @@ If you installed to a system directory, you may need to run::
 
 once to initialize the cffi cached shared objects as `root`
 
-For now, NumPyPy only works with Python 2, and is not complete. You may get
+For now, NumPyPy does not work with PyPy3*, and is not complete. You may get
 warnings or NotImplemented errors. Please let us know if you get crashes or
 wrong results.
 
 If you do not have lapack/blas runtimes, it may take over 10 minutes to install,
-since it needs to build a lapack compatability library.
+since it needs to build a lapack compatability library. However, you may later
+install upstream compatible runtimes, and NumPyPy should pick them up
+automatically the next time you run PyPy.
+
+Also note that the latest version of NumPyPy will probably not run in an older
+PyPy. Specifically, we require cffi 1.0 or later. Since cffi is baked into
+PyPy, you cannot update cffi in any version of PyPy (true as of Nov 2015)
+so there is no recourse but to update PyPy.
 
 ----------------------------------------
 
