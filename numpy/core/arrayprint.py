@@ -296,7 +296,7 @@ def _array2string(a, max_line_width, precision, suppress_small, separator=' ',
     elif issubclass(dtypeobj, _nt.integer):
 #        if issubclass(dtypeobj, _nt.timedelta64):
 #            format_function = formatdict['timedelta']
-        else:
+#        else:
             format_function = formatdict['int']
     elif issubclass(dtypeobj, _nt.floating):
         if issubclass(dtypeobj, _nt.longfloat):
