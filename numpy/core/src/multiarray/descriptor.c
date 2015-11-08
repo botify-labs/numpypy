@@ -1350,7 +1350,7 @@ PyArray_DescrConverter(PyObject *obj, PyArray_Descr **at)
         Py_ssize_t len = 0;
 
         /* Check for a string typecode. */
-        if (PyBytes_AsStringAndSize(obj, &type, &len) < 0) {
+        if (PyBytes_AsStringAndSize(obj, &type, &len) == -1) {
             goto error;
         }
 

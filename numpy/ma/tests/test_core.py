@@ -879,6 +879,7 @@ class TestMaskedArrayArithmetic(TestCase):
         assert_equal(np.greater_equal(x, y), greater_equal(xm, ym))
         assert_equal(np.conjugate(x), conjugate(xm))
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_count_func(self):
         # Tests count
         assert_equal(1, count(1))
@@ -1763,6 +1764,7 @@ class TestUfuncs(TestCase):
             assert_equal(ur.filled(0), mr.filled(0), f)
             assert_mask_equal(ur.mask, mr.mask, err_msg=f)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_reduce(self):
         # Tests reduce on MaskedArrays.
         a = self.d[0]
@@ -3680,6 +3682,7 @@ class TestMaskedArrayFunctions(TestCase):
         test = make_mask_descr(ntype)
         assert_equal(test, np.dtype([(('A', 'a'), bool)]))
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_make_mask(self):
         # Test make_mask
         # w/ a list as an input

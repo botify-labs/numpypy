@@ -8,6 +8,8 @@ from numpy.testing import (
     assert_raises
     )
 
+assert np.einsum is not None
+
 class TestEinSum(TestCase):
     def test_einsum_errors(self):
         # Need enough arguments

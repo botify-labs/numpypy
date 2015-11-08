@@ -150,10 +150,10 @@ default_filler = {'b': True,
                   }
 
 # Add datetime64 and timedelta64 types
-for v in ["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns", "ps",
-          "fs", "as"]:
-    default_filler["M8[" + v + "]"] = np.datetime64("NaT", v)
-    default_filler["m8[" + v + "]"] = np.timedelta64("NaT", v)
+#for v in ["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns", "ps",
+#          "fs", "as"]:
+#    default_filler["M8[" + v + "]"] = np.datetime64("NaT", v)
+#    default_filler["m8[" + v + "]"] = np.timedelta64("NaT", v)
 
 max_filler = ntypes._minvals
 max_filler.update([(k, -np.inf) for k in [np.float32, np.float64]])

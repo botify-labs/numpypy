@@ -3,6 +3,7 @@
 """
 from __future__ import division, absolute_import, print_function
 
+import sys
 import numpy as np
 from numpy.testing import (
     run_module_suite, TestCase, assert_array_equal, assert_equal
@@ -14,6 +15,7 @@ from numpy.lib.arraysetops import (
 
 class TestSetOps(TestCase):
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_unique(self):
 
         def check_all(a, b, i1, i2, c, dt):

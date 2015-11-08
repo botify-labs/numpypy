@@ -89,6 +89,7 @@ class TestRegression(TestCase):
         # Ticket #572
         np.lib.place(1, 1, 1)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_polyfit_build(self):
         # Ticket #628
         ref = [-1.06123820e-06, 5.70886914e-04, -1.13822012e-01,
@@ -160,6 +161,7 @@ class TestRegression(TestCase):
             i = np.random.randint(0, n, size=thesize)
             a[np.ix_(i, i, i, i, i)]
 
+        assert False  # XXX hangs
         self.assertRaises(ValueError, dp)
         self.assertRaises(ValueError, dp2)
 

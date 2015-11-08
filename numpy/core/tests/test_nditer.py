@@ -12,6 +12,7 @@ from numpy.testing import (
     assert_raises, dec
     )
 
+assert np.nditer is not None
 
 def iter_multi_index(i):
     ret = []

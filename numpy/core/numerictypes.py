@@ -298,6 +298,11 @@ def _add_types():
             allTypes[name] = typeinfo[a]
 _add_types()
 
+if '__pypy__' in sys.builtin_module_names:
+    for name in ['object', 'datetime', 'timedelta']:
+        if name not in allTypes:
+            allTypes[name] = sctypeDict[name] = None
+
 def _add_aliases():
     for a in typeinfo.keys():
         name = english_lower(a)

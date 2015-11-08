@@ -654,6 +654,7 @@ class TestRegression(TestCase):
         np.random.shuffle(b)
         assert_equal(np.sort(b, axis=0), a)
 
+    @dec.skipif(not hasattr(sys, 'getrefcount'))
     def test_refcount_vdot(self, level=rlevel):
         # Changeset #3443
         _assert_valid_refcount(np.vdot)
@@ -739,6 +740,7 @@ class TestRegression(TestCase):
         x = np.random.rand(*(2,)*16)
         x.transpose(list(range(16)))  # Should succeed
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_string_mergesort(self, level=rlevel):
         # Ticket #540
         x = np.array(['a']*32)
@@ -1260,6 +1262,7 @@ class TestRegression(TestCase):
         assert_(arr[0][0] == 'john')
         assert_(arr[0][1] == 4)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_void_scalar_constructor(self):
         #Issue #1550
 
@@ -1462,12 +1465,14 @@ class TestRegression(TestCase):
         # Ticket #1299 second test
         stra = 'aaaa'
         strb = 'bbbb'
-        numb = sys.getrefcount(strb)
-        numa = sys.getrefcount(stra)
+        if hasattr(sys, 'getrefcount'):
+            numb = sys.getrefcount(strb)
+            numa = sys.getrefcount(stra)
         x = np.array([[(0, stra), (1, strb)]], 'i8,O')
         x[x.nonzero()] = x.ravel()[:1]
-        assert_(sys.getrefcount(strb) == numb)
-        assert_(sys.getrefcount(stra) == numa + 2)
+        if hasattr(sys, 'getrefcount'):
+            assert_(sys.getrefcount(strb) == numb)
+            assert_(sys.getrefcount(stra) == numa + 2)
 
     def test_duplicate_title_and_name(self):
         # Ticket #1254
@@ -1578,13 +1583,15 @@ class TestRegression(TestCase):
         a.shape = (4, 4)
         lut = np.ones((5 + 3, 4), np.float)
         rgba = np.empty(shape=a.shape + (4,), dtype=lut.dtype)
-        c1 = sys.getrefcount(rgba)
+        if hasattr(sys, 'getrefcount'):
+            c1 = sys.getrefcount(rgba)
         try:
             lut.take(a, axis=0, mode='clip', out=rgba)
         except TypeError:
             pass
-        c2 = sys.getrefcount(rgba)
-        assert_equal(c1, c2)
+        if hasattr(sys, 'getrefcount'):
+            c2 = sys.getrefcount(rgba)
+            assert_equal(c1, c2)
 
     def test_fromfile_tofile_seeks(self):
         # On Python 3, tofile/fromfile used to get (#1610) the Python
@@ -1707,7 +1714,7 @@ class TestRegression(TestCase):
         b = np.zeros((2, 2, 2), order='F')[:,:, ::2].squeeze()
         assert_(a.flags.c_contiguous)
         assert_(a.flags.f_contiguous)
-        assert_(b.flags.f_contiguous)
+        assert_(b.flags.fortran, "F order not respected")
 
     def test_reduce_contiguous(self):
         # GitHub issue #387
@@ -1941,6 +1948,7 @@ class TestRegression(TestCase):
         a[...] = [[1, 2]]
         assert_equal(a, [[1, 2], [1, 2]])
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_memoryleak(self):
         # Ticket #1917 - ensure that array data doesn't leak
         for i in range(1000):
@@ -1948,6 +1956,7 @@ class TestRegression(TestCase):
             a = np.empty((100000000,), dtype='i1')
             del a
 
+    @dec.skipif(not hasattr(sys, 'getrefcount'))
     def test_ufunc_reduce_memoryleak(self):
         a = np.arange(6)
         acnt = sys.getrefcount(a)
@@ -2042,7 +2051,7 @@ class TestRegression(TestCase):
         a = np.empty((2, 2), order='F')
         b = copy.copy(a)
         c = copy.deepcopy(a)
-        assert_(b.flags.fortran)
+        assert_(b.flags.fortran, "F order not respected")
         assert_(b.flags.f_contiguous)
         assert_(c.flags.fortran)
         assert_(c.flags.f_contiguous)

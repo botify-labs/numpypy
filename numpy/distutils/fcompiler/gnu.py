@@ -126,8 +126,9 @@ class GnuFCompiler(FCompiler):
                 # from it.
                 import distutils.sysconfig as sc
                 g = {}
-                filename = sc.get_makefile_filename()
-                sc.parse_makefile(filename, g)
+                if '__pypy__' not in sys.builtin_module_names:
+                    filename = sc.get_makefile_filename()
+                    sc.parse_makefile(filename, g)
                 target = g.get('MACOSX_DEPLOYMENT_TARGET', '10.3')
                 os.environ['MACOSX_DEPLOYMENT_TARGET'] = target
                 if target == '10.3':

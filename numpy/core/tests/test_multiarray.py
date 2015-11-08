@@ -1949,6 +1949,7 @@ class TestMethods(TestCase):
         a.dot(b=b, out=c)
         assert_equal(c, np.dot(a, b))
 
+    @dec.skipif(True) # ufunc override disabled for 1.9
     def test_dot_override(self):
         # Temporarily disable __numpy_ufunc__ for 1.10; see gh-5844
         return
@@ -2007,10 +2008,12 @@ class TestMethods(TestCase):
     def test_diagonal_memleak(self):
         # Regression test for a bug that crept in at one point
         a = np.zeros((100, 100))
-        assert_(sys.getrefcount(a) < 50)
+        if hasattr(sys, 'getrefcount'):
+            assert_(sys.getrefcount(a) < 50)
         for i in range(100):
             a.diagonal()
-        assert_(sys.getrefcount(a) < 50)
+        if hasattr(sys, 'getrefcount'):
+            assert_(sys.getrefcount(a) < 50)
 
     def test_put(self):
         icodes = np.typecodes['AllInteger']
@@ -2405,6 +2408,7 @@ class TestBinop(object):
             yield check, op_name, True
             yield check, op_name, False
 
+    @dec.skipif(True) # ufunc override disabled for 1.9
     def test_ufunc_override_rop_simple(self):
         # Temporarily disable __numpy_ufunc__ for 1.10; see gh-5864
         return
@@ -4159,7 +4163,8 @@ class TestDot(TestCase):
         r = np.empty((1024, 32))
         for i in range(12):
             dot(f, v, r)
-        assert_equal(sys.getrefcount(r), 2)
+        if hasattr(sys, 'getrefcount'):
+            assert_equal(sys.getrefcount(r), 2)
         r2 = dot(f, v, out=None)
         assert_array_equal(r2, r)
         assert_(r is dot(f, v, out=r))
@@ -5297,12 +5302,14 @@ class TestNewBufferProtocol(object):
             self._check_roundtrip(x)
 
     def test_reference_leak(self):
-        count_1 = sys.getrefcount(np.core._internal)
+        if hasattr(sys, 'getrefcount'):
+            count_1 = sys.getrefcount(np.core._internal)
         a = np.zeros(4)
         b = memoryview(a)
         c = np.asarray(b)
-        count_2 = sys.getrefcount(np.core._internal)
-        assert_equal(count_1, count_2)
+        if hasattr(sys, 'getrefcount'):
+            count_2 = sys.getrefcount(np.core._internal)
+            assert_equal(count_1, count_2)
         del c  # avoid pyflakes unused variable warning.
 
     def test_padded_struct_array(self):

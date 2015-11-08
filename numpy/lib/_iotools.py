@@ -550,8 +550,8 @@ class StringConverter(object):
     @classmethod
     def _dtypeortype(cls, dtype):
         """Returns dtype for datetime64 and type of dtype otherwise."""
-        if dtype.type == np.datetime64:
-            return dtype
+        #if dtype.type == np.datetime64:
+        #    return dtype
         return dtype.type
     #
 

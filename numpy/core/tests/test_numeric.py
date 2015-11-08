@@ -1695,7 +1695,7 @@ class TestCreationFuncs(TestCase):
                                **fill_kwarg)
 
                     assert_(arr.dtype == dtype)
-                    assert_(getattr(arr.flags, self.orders[order]))
+                    assert_(getattr(arr.flags, self.orders[order]),'arr is not %s' % self.orders[order])
 
                     if fill_value is not None:
                         if dtype.str.startswith('|S'):
@@ -1717,6 +1717,7 @@ class TestCreationFuncs(TestCase):
         self.check_function(np.full, 0)
         self.check_function(np.full, 1)
 
+    @dec.skipif(not hasattr(sys, 'getrefcount'))
     def test_for_reference_leak(self):
         # Make sure we have an object for reference
         dim = 1

@@ -30,6 +30,20 @@ if sys.version_info[0] >= 3:
 else:
     import __builtin__ as builtins
 
+if sys.platform == 'darwin' and __file__.startswith('/var'):
+    # See https://bitbucket.org/pypy/numpy/issues/21. Basically, a pip
+    # install from a git checkout gets /var and /private/var confused
+    # on OS X. The former is a symlink to the later, and used as
+    # $TMPDIR (to which the checkout is copied), and pip
+    # reads-and-evals this setup.py directly and sets __file__ to
+    # something underneath $TMPDIR. Meanwhile, when the rest of the
+    # code is executed by the python interpreter, it gets the complete path
+    # starting with /private. This confuses numpy.distutils.misc_util:rel_path
+    # and breaks shared libraries.
+    # So to fix it, we change our __file__ because it's the least invasive thing to
+    # do. This should only happen from git checkouts, pip uses a different mechanism
+    # for tarballs. The OS X filesystem layout is also unlikely to change.
+    __file__ = os.path.realpath(__file__)
 
 CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
@@ -58,7 +72,7 @@ Operating System :: MacOS
 MAJOR               = 1
 MINOR               = 10
 MICRO               = 0
-ISRELEASED          = False
+ISRELEASED          = True
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 
@@ -96,6 +110,7 @@ if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 # a lot more robust than what was previously being used.
 builtins.__NUMPY_SETUP__ = True
 
+PYPY = '__pypy__' in sys.builtin_module_names
 
 def get_version_info():
     # Adding the git rev number needs to be done inside write_version_py(),
@@ -246,7 +261,7 @@ def setup_package():
             import setuptools
         from numpy.distutils.core import setup
         cwd = os.path.abspath(os.path.dirname(__file__))
-        if not os.path.exists(os.path.join(cwd, 'PKG-INFO')):
+        if not PYPY and not os.path.exists(os.path.join(cwd, 'PKG-INFO')):
             # Generate Cython sources, unless building from source release
             generate_cython()
         metadata['configuration'] = configuration

@@ -205,6 +205,10 @@ PyUFunc_CheckOverride(PyUFuncObject *ufunc, char *method,
      * Actual implementation follows:
      ****************************************************************/
 
+    /* disabled until remaining issues are fixed */
+    *result = NULL;
+    return 0;
+
     /*
      * Check inputs
      */

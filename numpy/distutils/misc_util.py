@@ -695,7 +695,7 @@ class Configuration(object):
 
     _list_keys = ['packages', 'ext_modules', 'data_files', 'include_dirs',
                   'libraries', 'headers', 'scripts', 'py_modules',
-                  'installed_libraries', 'define_macros']
+                  'installed_libraries', 'define_macros', 'shared_libraries']
     _dict_keys = ['package_dir', 'installed_pkg_config']
     _extra_keys = ['name', 'version']
 
@@ -1489,6 +1489,68 @@ class Configuration(object):
                       ' it may be too late to add an extension '+name)
         return ext
 
+    def add_cffi_extension(self, ffi, sources, **kw):
+        """Add extension to configuration.
+
+        Create and add an Extension instance to the ext_modules list. This
+        method also takes the following optional keyword arguments that are
+        passed on to the Extension constructor.
+
+        Parameters
+        ----------
+        name : str
+            name of the extension
+        ffi: cffi.FFI
+            cffi.FFI object configured for API-mode use. ffi.set_source() and
+            ffi.cdef() must have been called.
+        sources : seq
+            list of the sources. The list of sources may contain functions
+            (called source generators) which must take an extension instance
+            and a build directory as inputs and return a source file or list of
+            source files or None. If None is returned then no sources are
+            generated. If the Extension instance has no sources after
+            processing all source generators, then no extension module is
+            built.
+        include_dirs :
+        define_macros :
+        undef_macros :
+        library_dirs :
+        libraries :
+        runtime_library_dirs :
+        extra_objects :
+        extra_compile_args :
+        extra_link_args :
+        extra_f77_compile_args :
+        extra_f90_compile_args :
+        export_symbols :
+        swig_opts :
+        depends :
+            The depends list contains paths to files or directories that the
+            sources of the extension module depend on. If any path in the
+            depends list is newer than the extension module, then the module
+            will be rebuilt.
+        language :
+        f2py_options :
+        module_dirs :
+        extra_info : dict or list
+            dict or list of dict of keywords to be appended to keywords.
+
+        Notes
+        -----
+        The self.paths(...) method is applied to all lists that may contain
+        paths.
+        """
+        full_name = ffi._assigned_source[0]
+        package, name = full_name.rsplit('.', 1)
+        if package != self.name:
+            raise ValueError(
+                "Mismatch between the name of the FFI extension, %r, and the "
+                "current package, %r" % (full_name, self.name))
+        c_source_name = njoin(self.package_path, '{name}.c'.format(name=name))
+        ffi.emit_c_code(c_source_name)
+        sources = sources + [c_source_name]
+        self.add_extension(name, sources, **kw)
+
     def add_library(self,name,sources,**build_info):
         """
         Add library to configuration.
@@ -1518,7 +1580,8 @@ class Configuration(object):
                 * language
 
         """
-        self._add_library(name, sources, None, build_info)
+        # Add to libraries list so that it is build with build_clib
+        self.libraries.append((name, self._add_library(name, sources, None, build_info)))
 
         dist = self.get_distribution()
         if dist is not None:
@@ -1539,8 +1602,7 @@ class Configuration(object):
 
         self._fix_paths_dict(build_info)
 
-        # Add to libraries list so that it is build with build_clib
-        self.libraries.append((name, build_info))
+        return build_info
 
     def add_installed_library(self, name, sources, install_dir, build_info=None):
         """
@@ -1590,8 +1652,61 @@ class Configuration(object):
             build_info = {}
 
         install_dir = os.path.join(self.package_path, install_dir)
-        self._add_library(name, sources, install_dir, build_info)
+        # Add to libraries list so that it is build with build_clib
+        self.libraries.append((name, self._add_library(name, sources, None, build_info)))
         self.installed_libraries.append(InstallableLib(name, build_info, install_dir))
+
+    def add_shared_library(self, name, sources, install_dir='.', build_info=None):
+        """
+        Similar to add_library, but build a shared object instead (*.so, *.dll)
+
+        Most C libraries used with `distutils` are only used to build python
+        extensions, but shared libraries built through this method will be installed
+        so that they can be used by cffi
+
+        Parameters
+        ----------
+        name : str
+            Name of the installed library.
+        sources : sequence
+            List of the library's source files. See `add_library` for details.
+        install_dir : str
+            Path to install the library, relative to the current sub-package.
+        build_info : dict, optional
+            The following keys are allowed:
+
+                * depends
+                * macros
+                * include_dirs
+                * extra_compiler_args
+                * extra_f77_compiler_args
+                * extra_f90_compiler_args
+                * f2py_options
+                * language
+
+        Returns
+        -------
+        None
+
+        See Also
+        --------
+        add_library, add_npy_pkg_config, get_info
+
+        Notes
+        -----
+        The best way to encode the options required to link against the specified
+        C libraries is to use a "libname.ini" file, and use `get_info` to
+        retrieve the required options (see `add_npy_pkg_config` for more
+        information).
+
+        """
+        if not build_info:
+            build_info = {}
+
+        install_dir = os.path.join(self.package_path, install_dir)
+        # Add to shared_libraries list so that it is build with build_clib
+        _build_info = self._add_library(name, sources, None, build_info)
+        self.shared_libraries.append((name, _build_info, install_dir))
 
     def add_npy_pkg_config(self, template, install_dir, subst_dict=None):
         """

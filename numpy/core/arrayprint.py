@@ -263,8 +263,8 @@ def _array2string(a, max_line_width, precision, suppress_small, separator=' ',
                   'complexfloat': ComplexFormat(data, precision,
                                                  suppress_small),
                   'longcomplexfloat': LongComplexFormat(precision),
-                  'datetime': DatetimeFormat(data),
-                  'timedelta': TimedeltaFormat(data),
+#                  'datetime' : DatetimeFormat(data),
+#                  'timedelta' : TimedeltaFormat(data),
                   'numpystr': repr_format,
                   'str': str}
 
@@ -294,8 +294,8 @@ def _array2string(a, max_line_width, precision, suppress_small, separator=' ',
     if issubclass(dtypeobj, _nt.bool_):
         format_function = formatdict['bool']
     elif issubclass(dtypeobj, _nt.integer):
-        if issubclass(dtypeobj, _nt.timedelta64):
-            format_function = formatdict['timedelta']
+#        if issubclass(dtypeobj, _nt.timedelta64):
+#            format_function = formatdict['timedelta']
         else:
             format_function = formatdict['int']
     elif issubclass(dtypeobj, _nt.floating):
@@ -310,8 +310,8 @@ def _array2string(a, max_line_width, precision, suppress_small, separator=' ',
             format_function = formatdict['complexfloat']
     elif issubclass(dtypeobj, (_nt.unicode_, _nt.string_)):
         format_function = formatdict['numpystr']
-    elif issubclass(dtypeobj, _nt.datetime64):
-        format_function = formatdict['datetime']
+#        elif issubclass(dtypeobj, _nt.datetime64):
+#            format_function = formatdict['datetime']
     else:
         format_function = formatdict['numpystr']
 

@@ -22,6 +22,7 @@ NOTE: This is generated code. Look in Misc/lapack_lite for information on
       remaking this file.
 */
 #include "Numeric/f2c.h"
+#include "lapack_lite.h"
 
 #ifdef HAVE_CONFIG
 #include "config.h"

@@ -13,6 +13,7 @@ kw_unicode_true = {'unicode': True}  # make 2to3 work properly
 kw_unicode_false = {'unicode': False}
 
 class TestBasic(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_from_object_array(self):
         A = np.array([['abc', 2],
                       ['long   ', '0123456789']], dtype='O')
@@ -21,6 +22,7 @@ class TestBasic(TestCase):
         assert_array_equal(B, asbytes_nested([['abc', '2'],
                                               ['long', '0123456789']]))
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_from_object_array_unicode(self):
         A = np.array([['abc', sixu('Sigma \u03a3')],
                       ['long   ', '0123456789']], dtype='O')
@@ -30,6 +32,7 @@ class TestBasic(TestCase):
         assert_array_equal(B, [['abc', sixu('Sigma \u03a3')],
                                ['long', '0123456789']])
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_from_string_array(self):
         A = np.array(asbytes_nested([['abc', 'foo'],
                                      ['long   ', '0123456789']]))
@@ -47,6 +50,7 @@ class TestBasic(TestCase):
         assert_(C[0, 0] != B[0, 0])
         assert_(C[0, 0] == A[0, 0])
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_from_unicode_array(self):
         A = np.array([['abc', sixu('Sigma \u03a3')],
                       ['long   ', '0123456789']])
@@ -65,17 +69,20 @@ class TestBasic(TestCase):
 
         self.assertRaises(UnicodeEncodeError, fail)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_unicode_upconvert(self):
         A = np.char.array(['abc'])
         B = np.char.array([sixu('\u03a3')])
         assert_(issubclass((A + B).dtype.type, np.unicode_))
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_from_string(self):
         A = np.char.array(asbytes('abc'))
         assert_equal(len(A), 1)
         assert_equal(len(A[0]), 3)
         assert_(issubclass(A.dtype.type, np.string_))
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_from_unicode(self):
         A = np.char.array(sixu('\u03a3'))
         assert_equal(len(A), 1)
@@ -84,6 +91,7 @@ class TestBasic(TestCase):
         assert_(issubclass(A.dtype.type, np.unicode_))
 
 class TestVecString(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_non_existent_method(self):
 
         def fail():
@@ -91,6 +99,7 @@ class TestVecString(TestCase):
 
         self.assertRaises(AttributeError, fail)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_non_string_array(self):
 
         def fail():
@@ -98,6 +107,7 @@ class TestVecString(TestCase):
 
         self.assertRaises(TypeError, fail)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_invalid_args_tuple(self):
 
         def fail():
@@ -105,6 +115,7 @@ class TestVecString(TestCase):
 
         self.assertRaises(TypeError, fail)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_invalid_type_descr(self):
 
         def fail():
@@ -112,6 +123,7 @@ class TestVecString(TestCase):
 
         self.assertRaises(TypeError, fail)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_invalid_function_args(self):
 
         def fail():
@@ -119,6 +131,7 @@ class TestVecString(TestCase):
 
         self.assertRaises(TypeError, fail)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_invalid_result_type(self):
 
         def fail():
@@ -126,6 +139,7 @@ class TestVecString(TestCase):
 
         self.assertRaises(TypeError, fail)
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_broadcast_error(self):
 
         def fail():
@@ -135,6 +149,7 @@ class TestVecString(TestCase):
 
 
 class TestWhitespace(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def setUp(self):
         self.A = np.array([['abc ', '123  '],
                            ['789 ', 'xyz ']]).view(np.chararray)
@@ -150,6 +165,7 @@ class TestWhitespace(TestCase):
         assert_(not np.any(self.A != self.B))
 
 class TestChar(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def setUp(self):
         self.A = np.array('abc1', dtype='c').view(np.chararray)
 
@@ -158,6 +174,7 @@ class TestChar(TestCase):
         assert_equal(self.A.upper()[:2].tobytes(), asbytes('AB'))
 
 class TestComparisons(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def setUp(self):
         self.A = np.array([['abc', '123'],
                            ['789', 'xyz']]).view(np.chararray)
@@ -185,6 +202,7 @@ class TestComparisons(TestCase):
 class TestComparisonsMixed1(TestComparisons):
     """Ticket #1276"""
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def setUp(self):
         TestComparisons.setUp(self)
         self.B = np.array([['efg', '123  '],
@@ -193,12 +211,14 @@ class TestComparisonsMixed1(TestComparisons):
 class TestComparisonsMixed2(TestComparisons):
     """Ticket #1276"""
 
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def setUp(self):
         TestComparisons.setUp(self)
         self.A = np.array([['abc', '123'],
                            ['789', 'xyz']], np.unicode_).view(np.chararray)
 
 class TestInformation(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def setUp(self):
         self.A = np.array([[' abc ', ''],
                            ['12345', 'MixedCase'],
@@ -305,6 +325,7 @@ class TestInformation(TestCase):
 
 
 class TestMethods(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def setUp(self):
         self.A = np.array([[' abc ', ''],
                            ['12345', 'MixedCase'],
@@ -597,6 +618,7 @@ class TestMethods(TestCase):
 
 
 class TestOperations(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def setUp(self):
         self.A = np.array([['abc', '123'],
                            ['789', 'xyz']]).view(np.chararray)
@@ -691,6 +713,7 @@ class TestOperations(TestCase):
         assert arr[0, 0] == asbytes('abc')
 
 
+@dec.skipif('__pypy__' in sys.builtin_module_names)
 def test_empty_indexing():
     """Regression test for ticket 1948."""
     # Check that indexing a chararray with an empty list/array returns an

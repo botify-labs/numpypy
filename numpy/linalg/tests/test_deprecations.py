@@ -1,10 +1,12 @@
 """Test deprecation and future warnings.
 
 """
+import sys
 import numpy as np
-from numpy.testing import assert_warns, run_module_suite
+from numpy.testing import assert_warns, run_module_suite, dec
 
 
+@dec.skipif('__pypy__' in sys.builtin_module_names)
 def test_qr_mode_full_future_warning():
     """Check mode='full' FutureWarning.
 

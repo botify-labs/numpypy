@@ -20,9 +20,32 @@
 #include <assert.h>
 #include <math.h>
 
+#ifdef _WIN32
+  #ifdef _UMATH_LINALG_CAPI_DLL
+    #define EXPORTED __declspec(dllexport)
+  #else
+    #define EXPORTED __declspec(dllimport)
+  #endif
+#else
+  #ifdef _UMATH_LINALG_CAPI_DLL
+    #define EXPORTED extern
+  #else
+    #define EXPORTED static
+  #endif
+#endif
+
+
 
 static const char* umath_linalg_version_string = "0.1.4";
 
+EXPORTED int _npy_clear_floatstatus(void)
+{
+    return npy_clear_floatstatus();
+}
+EXPORTED void _npy_set_floatstatus_invalid(void)
+{
+    npy_set_floatstatus_invalid();
+}  
 /*
  ****************************************************************************
  *                        Debugging support                                 *
@@ -434,7 +457,7 @@ static DOUBLECOMPLEX_t z_minus_one;
 static DOUBLECOMPLEX_t z_ninf;
 static DOUBLECOMPLEX_t z_nan;
 
-static void init_constants(void)
+EXPORTED void init_constants(void)
 {
     /*
        this is needed as NPY_INFINITY and NPY_NAN macros
@@ -1118,7 +1141,7 @@ static inline void
     }
 }
 
-static void
+EXPORTED void
 @TYPE@_slogdet(char **args,
                npy_intp *dimensions,
                npy_intp *steps,
@@ -1164,7 +1187,7 @@ static void
     }
 }
 
-static void
+EXPORTED void
 @TYPE@_det(char **args,
            npy_intp *dimensions,
            npy_intp *steps,
@@ -1520,7 +1543,7 @@ static inline void
 /**begin repeat
    #TYPE=FLOAT,DOUBLE,CFLOAT,CDOUBLE#
  */
-static void
+EXPORTED void
 @TYPE@_eighlo(char **args,
               npy_intp *dimensions,
               npy_intp *steps,
@@ -1529,7 +1552,7 @@ static void
     @TYPE@_eigh_wrapper('V', 'L', args, dimensions, steps);
 }
 
-static void
+EXPORTED void
 @TYPE@_eighup(char **args,
               npy_intp *dimensions,
               npy_intp *steps,
@@ -1538,7 +1561,7 @@ static void
     @TYPE@_eigh_wrapper('V', 'U', args, dimensions, steps);
 }
 
-static void
+EXPORTED void
 @TYPE@_eigvalshlo(char **args,
                   npy_intp *dimensions,
                   npy_intp *steps,
@@ -1547,7 +1570,7 @@ static void
     @TYPE@_eigh_wrapper('N', 'L', args, dimensions, steps);
 }
 
-static void
+EXPORTED void
 @TYPE@_eigvalshup(char **args,
                   npy_intp *dimensions,
                   npy_intp *steps,
@@ -1635,7 +1658,7 @@ call_@lapack_func@(GESV_PARAMS_t *params)
     return rv;
 }
 
-static void
+EXPORTED void
 @TYPE@_solve(char **args, npy_intp *dimensions, npy_intp *steps,
              void *NPY_UNUSED(func))
 {
@@ -1672,7 +1695,7 @@ static void
     set_fp_invalid_or_clear(error_occurred);
 }
 
-static void
+EXPORTED void
 @TYPE@_solve1(char **args, npy_intp *dimensions, npy_intp *steps,
               void *NPY_UNUSED(func))
 {
@@ -1707,7 +1730,7 @@ static void
     set_fp_invalid_or_clear(error_occurred);
 }
 
-static void
+EXPORTED void
 @TYPE@_inv(char **args, npy_intp *dimensions, npy_intp *steps,
            void *NPY_UNUSED(func))
 {
@@ -1841,7 +1864,7 @@ static void
     set_fp_invalid_or_clear(error_occurred);
 }
 
-static void
+EXPORTED void
 @TYPE@_cholesky_lo(char **args, npy_intp *dimensions, npy_intp *steps,
                 void *NPY_UNUSED(func))
 {
@@ -2326,7 +2349,7 @@ static inline void
     set_fp_invalid_or_clear(error_occurred);
 }
 
-static void
+EXPORTED void
 @TYPE@_eig(char **args,
            npy_intp *dimensions,
            npy_intp *steps,
@@ -2335,7 +2358,7 @@ static void
     @TYPE@_eig_wrapper('N', 'V', args, dimensions, steps);
 }
 
-static void
+EXPORTED void
 @TYPE@_eigvals(char **args,
                npy_intp *dimensions,
                npy_intp *steps,
@@ -2785,7 +2808,7 @@ static inline void
 /**begin repeat
    #TYPE=FLOAT,DOUBLE,CFLOAT,CDOUBLE#
  */
-static void
+EXPORTED void
 @TYPE@_svd_N(char **args,
              npy_intp *dimensions,
              npy_intp *steps,
@@ -2794,7 +2817,7 @@ static void
     @TYPE@_svd_wrapper('N', args, dimensions, steps);
 }
 
-static void
+EXPORTED void
 @TYPE@_svd_S(char **args,
              npy_intp *dimensions,
              npy_intp *steps,
@@ -2803,7 +2826,7 @@ static void
     @TYPE@_svd_wrapper('S', args, dimensions, steps);
 }
 
-static void
+EXPORTED void
 @TYPE@_svd_A(char **args,
              npy_intp *dimensions,
              npy_intp *steps,
@@ -3234,3 +3257,14 @@ init_umath_linalg(void)
 
     return RETVAL;
 }
+
+#ifdef PYPY_VERSION
+/*UFUNC_API*/
+NPY_NO_EXPORT int
+PyUFunc_getfperr(void)
+{
+    int retstatus;
+    UFUNC_CHECK_STATUS(retstatus);
+    return retstatus;
+}
+#endif

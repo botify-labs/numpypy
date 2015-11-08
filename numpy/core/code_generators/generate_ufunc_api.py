@@ -35,7 +35,10 @@ static void **PyUFunc_API=NULL;
 #endif
 #endif
 
+#ifdef PYPY_VERSION
+#else
 %s
+#endif
 
 static NPY_INLINE int
 _import_umath(void)
@@ -47,6 +50,7 @@ _import_umath(void)
       PyErr_SetString(PyExc_ImportError, "numpy.core.umath failed to import");
       return -1;
   }
+#ifndef PYPY_VERSION
   c_api = PyObject_GetAttrString(numpy, "_UFUNC_API");
   Py_DECREF(numpy);
   if (c_api == NULL) {
@@ -74,6 +78,7 @@ _import_umath(void)
       PyErr_SetString(PyExc_RuntimeError, "_UFUNC_API is NULL pointer");
       return -1;
   }
+#endif
   return 0;
 }
 

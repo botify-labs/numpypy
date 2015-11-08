@@ -301,7 +301,7 @@ def assert_equal(actual,desired,err_msg='',verbose=True):
     # XXX: catch ValueError for subclasses of ndarray where iscomplex fail
     try:
         usecomplex = iscomplexobj(actual) or iscomplexobj(desired)
-    except ValueError:
+    except (ValueError, NotImplementedError):
         usecomplex = False
 
     if usecomplex:
@@ -351,7 +351,7 @@ def assert_equal(actual,desired,err_msg='',verbose=True):
         pass
 
     # Explicitly use __eq__ for comparison, ticket #2552
-    if not (desired == actual):
+    if not (desired == actual or actual == desired):
         raise AssertionError(msg)
 
 def print_assert_equal(test_string, actual, desired):

@@ -7,6 +7,7 @@
 #define _MULTIARRAYMODULE
 
 #include <Python.h>
+#include "common.h"
 #include <assert.h>
 #include <numpy/arrayobject.h>
 #include "npy_cblas.h"

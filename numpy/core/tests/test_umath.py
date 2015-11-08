@@ -971,6 +971,7 @@ class TestMinMax(TestCase):
 
 
 class TestAbsoluteNegative(TestCase):
+    @dec.skipif('__pypy__' in sys.builtin_module_names)
     def test_abs_neg_blocked(self):
         # simd tests on abs, test all alignments for vz + 2 * (vs - 1) + 1
         for dt, sz in [(np.float32, 11), (np.float64, 5)]:
@@ -1206,6 +1207,7 @@ class TestSpecialMethods(TestCase):
         assert_equal(ncu.maximum(a, B()), 0)
         assert_equal(ncu.maximum(a, C()), 0)
 
+    @dec.skipif(True) # ufunc override disabled for 1.9
     def test_ufunc_override(self):
         # Temporarily disable __numpy_ufunc__ for 1.10; see gh-5844
         return
@@ -1233,6 +1235,7 @@ class TestSpecialMethods(TestCase):
         assert_equal(res0[5], {})
         assert_equal(res1[5], {})
 
+    @dec.skipif(True) # ufunc override disabled for 1.9
     def test_ufunc_override_mro(self):
         # Temporarily disable __numpy_ufunc__ for 1.10; see gh-5864
         return
@@ -1326,6 +1329,7 @@ class TestSpecialMethods(TestCase):
         assert_raises(TypeError, four_mul_ufunc, 1, 2, c_sub, c)
         assert_raises(TypeError, four_mul_ufunc, 1, c, c_sub, c)
 
+    @dec.skipif(True) # ufunc override disabled for 1.9
     def test_ufunc_override_methods(self):
         # Temporarily disable __numpy_ufunc__ for 1.10; see gh-5864
         return
@@ -1432,6 +1436,7 @@ class TestSpecialMethods(TestCase):
         assert_equal(res[3], 0)
         assert_equal(res[4], (a, [4, 2], 'b0'))
 
+    @dec.skipif(True) # ufunc override disabled for 1.9
     def test_ufunc_override_out(self):
         # Temporarily disable __numpy_ufunc__ for 1.10; see gh-5844
         return
@@ -1468,6 +1473,7 @@ class TestSpecialMethods(TestCase):
         assert_equal(res7['out'][0], 'out0')
         assert_equal(res7['out'][1], 'out1')
 
+    @dec.skipif(True) # ufunc override disabled for 1.9
     def test_ufunc_override_exception(self):
         # Temporarily disable __numpy_ufunc__ for 1.10; see gh-5864
         return

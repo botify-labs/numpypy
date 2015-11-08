@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 
 import os
+import sys
 import genapi
 
 from genapi import \
@@ -144,6 +145,17 @@ _import_array(void)
 #endif
 """
 
+h_pypy_template = r"""
+
+typedef struct {
+        PyObject_HEAD
+        npy_bool obval;
+} PyBoolScalarObject;
+
+#define import_array()
+#define PyArray_New _PyArray_New
+
+"""
 
 c_template = r"""
 /* These pointers will be stored in the C-object for use in other
@@ -238,14 +250,18 @@ def do_generate_api(targets, sources):
 
     # Write to header
     fid = open(header_file, 'w')
-    s = h_template % ('\n'.join(module_list), '\n'.join(extension_list))
+    if '__pypy__' in sys.builtin_module_names:
+        s = h_pypy_template
+    else:
+        s = h_template % ('\n'.join(module_list), '\n'.join(extension_list))
     fid.write(s)
     fid.close()
 
     # Write to c-code
     fid = open(c_file, 'w')
-    s = c_template % ',\n'.join(init_list)
-    fid.write(s)
+    if '__pypy__' not in sys.builtin_module_names:
+        s = c_template % ',\n'.join(init_list)
+        fid.write(s)
     fid.close()
 
     # write to documentation

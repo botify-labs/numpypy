@@ -7609,3 +7609,10 @@ add_newdoc('numpy.core.numerictypes', 'int64',
 
 add_newdoc('numpy.core.numerictypes', 'object_',
     """Any Python object.  Character code: 'O'.""")
+
+
+from numpy.ufunc_docstrings import docdict
+for key, doc in docdict.iteritems():
+    place, name = key.rsplit('.', 1)
+    add_newdoc(place, name, doc)
+del docdict
