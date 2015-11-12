@@ -12,4 +12,4 @@ void rfftb(int n, double r[], double wsave[]);
 ''')
 
 
-ffi.set_source('numpy.fft._fft_cffi', '#include "fftpack.h"')
+ffi.set_source('numpy.fft._fft_cffi', '')

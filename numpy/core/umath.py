@@ -41,7 +41,7 @@ def NotImplementedFunc(func):
     return tmp
 
 for name in '''
-hypot remainder frompyfunc ldexp nextafter _arg mod
+hypot remainder frompyfunc ldexp nextafter _arg mod _add_newdoc_ufunc
 '''.split():
     if name not in globals():
         globals()[name] = NotImplementedFunc(name)

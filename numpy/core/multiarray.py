@@ -98,10 +98,11 @@ CLIP WRAP RAISE MAXDIMS ALLOW_THREADS BUFSIZE
 for name in '''
 nested_iters
 broadcast empty_like fromiter fromfile frombuffer newbuffer getbuffer
-int_asbuffer set_numeric_ops can_cast promote_types
-min_scalar_type lexsort compare_chararrays putmask einsum inner
-_vec_string datetime_data correlate correlate2
+int_asbuffer set_numeric_ops promote_types digitize
+lexsort compare_chararrays putmask einsum inner bincount interp
+_vec_string datetime_data correlate correlate2 vdot matmul _insert
 datetime_as_string busday_offset busday_count is_busday busdaycalendar
+ravel_multi_index unravel_index packbits unpackbits
 '''.split():
     if name not in globals():
         globals()[name] = NotImplementedFunc(name)
