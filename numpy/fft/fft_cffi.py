@@ -7,7 +7,7 @@ def cffti(n):
     '''
     wsave = np.empty(4*n+15, 'double') # don't even ask me why 4 and why 15. Just took them from C-ext wrapper "as is".
     wsave_ptr = wsave.__array_interface__['data'][0]
-    lib.cffti(n, ffi.cast('double*', wsave_ptr))
+    lib.npy_cffti(n, ffi.cast('double*', wsave_ptr))
     return wsave
 
 def rffti(n):
@@ -16,7 +16,7 @@ def rffti(n):
     '''
     wsave = np.empty(2*n+15, 'double')
     wsave_ptr = wsave.__array_interface__['data'][0]
-    lib.rffti(n, ffi.cast('double*', wsave_ptr))
+    lib.npy_rffti(n, ffi.cast('double*', wsave_ptr))
     return wsave
 
 
@@ -35,7 +35,7 @@ def cfftf(a, wsave):
     for i in range(nrepeats):
         #print 'npts,i,a.shape',npts,i,a.shape,a.dtype
         data_cdata = ffi.cast('double*', dptr)
-        lib.cfftf(n, data_cdata, ffi.cast('double*', wsave_ptr))
+        lib.npy_cfftf(n, data_cdata, ffi.cast('double*', wsave_ptr))
         dptr += npts *2 * ffi.sizeof('double')
     return data
 
@@ -56,7 +56,7 @@ def cfftb(a, wsave):
     for i in range(nrepeats):
         #print 'npts,i,a.shape',npts,i,a.shape,a.dtype
         data_cdata = ffi.cast('double*', dptr)
-        lib.cfftb(n, data_cdata, ffi.cast('double*', wsave_ptr))
+        lib.npy_cfftb(n, data_cdata, ffi.cast('double*', wsave_ptr))
         dptr += npts * 2 * ffi.sizeof('double')
     return data
 
@@ -84,7 +84,7 @@ def rfftf(a, wsave):
         start = i * rstep
         dstart = i * npts
         ret_d.flat[start + 1: start + 1 + npts] = data.flat[dstart:dstart + npts]
-        lib.rfftf(n, ffi.cast('double *', rptr + double_t), wsave_ptr)
+        lib.npy_rfftf(n, ffi.cast('double *', rptr + double_t), wsave_ptr)
         ret_d.flat[start] = ret_d.flat[start + 1]
         ret_d.flat[start + 1] = 0.0
         rptr += rstep * double_t
@@ -111,7 +111,7 @@ def rfftb(a, wsave):
         dstart = i * npts * 2
         ret.flat[start + 1: start + npts] = data_double.flat[dstart + 2:dstart + npts + 1]
         ret.flat[start] = data_double.flat[dstart]
-        lib.rfftb(n, ffi.cast('double *', rptr), wsave_ptr)
+        lib.npy_rfftb(n, ffi.cast('double *', rptr), wsave_ptr)
         rptr += npts * ffi.sizeof('double')
     return ret
 
