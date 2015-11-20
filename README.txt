@@ -13,6 +13,11 @@ or without a git checkout::
    virtualenv -p /path/to/pypy/bin/pypy /directory/to/try/pypy-numpy
     /directory/to/try/pypy-numpy/bin/pip install git+https://bitbucket.org/pypy/numpy.git
 
+If you are using PyPy 4.0.1 (and not a nightly build), you must checkout the
+``pypy-4.0.1`` tagged revision, so replace the git line above with::
+
+   git clone https://bitbucket.org/pypy/numpy.git; git checkout pypy-4.0.1
+
 If you get a message about `missing Python.h` you must install the pypy-dev
 package for your system
 
