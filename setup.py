@@ -25,6 +25,13 @@ import subprocess
 if sys.version_info[:2] < (2, 6) or (3, 0) <= sys.version_info[0:2] < (3, 2):
     raise RuntimeError("Python version 2.6, 2.7 or >= 3.2 required.")
 
+if '__pypy__' not in sys.modules:
+    raise RuntimeError("A PyPy interpreter is required")
+MIN_PYPY_VERSION = (4, 1)
+if sys.pypy_version_info < MIN_PYPY_VERSION:
+    raise RuntimeError("PyPy version >= %s required" %
+                       ('.'.join(map(str, MIN_PYPY_VERSION)),))
+
 if sys.version_info[0] >= 3:
     import builtins
 else:
