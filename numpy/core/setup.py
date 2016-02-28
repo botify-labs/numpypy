@@ -704,8 +704,25 @@ def configuration(parent_package='',top_path=None):
                        ]
     if '__pypy__' not in sys.builtin_module_names:
         config.add_library('npysort',
-                       sources=npysort_sources,
-                       include_dirs=[])
+                           sources=npysort_sources,
+                           include_dirs=[])
+
+    have_cffi = is_cffi()
+
+    partition_sources = [
+        join('src', 'private', 'npy_partition.h.src'),
+        join('src', 'npysort', 'selection.c.src'),
+    ]
+
+    if have_cffi and is_pypy():
+        from _parition_build import ffi
+        c_source_name = os.path.join(os.path.dirname(__file__), "_partition.c")
+        ffi.emit_c_code(c_source_name)
+        config.add_extension(
+                '_partition',
+                sources=[c_source_name] + partition_sources,
+        )
+
 
     #######################################################################
     #                        multiarray module                            #
@@ -987,6 +1004,20 @@ def configuration(parent_package='',top_path=None):
     config.make_svn_version_py()
 
     return config
+
+
+def is_pypy():
+    return '__pypy__' in sys.builtin_module_names
+
+
+def is_cffi():
+    try:
+        import cffi
+        have_cffi = True
+    except ImportError:
+        have_cffi = False
+    return have_cffi
+
 
 if __name__ == '__main__':
     from numpy.distutils.core import setup
