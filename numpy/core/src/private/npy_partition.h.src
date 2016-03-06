@@ -26,6 +26,9 @@
 
 #define NPY_MAX_PIVOT_STACK 50
 
+int get_max_pivot_stack() {
+    return NPY_MAX_PIVOT_STACK;
+}
 
 /**begin repeat
  *
@@ -41,12 +44,12 @@
  *         npy_cdouble, npy_clongdouble#
  */
 
-NPY_VISIBILITY_HIDDEN int introselect_@suff@(@type@ *v, npy_intp num,
+int introselect_@suff@(@type@ *v, npy_intp num,
                                              npy_intp kth,
                                              npy_intp * pivots,
                                              npy_intp * npiv,
                                              void *NOT_USED);
-NPY_VISIBILITY_HIDDEN int aintroselect_@suff@(@type@ *v, npy_intp* tosort, npy_intp num,
+int aintroselect_@suff@(@type@ *v, npy_intp* tosort, npy_intp num,
                                               npy_intp kth,
                                               npy_intp * pivots,
                                               npy_intp * npiv,
