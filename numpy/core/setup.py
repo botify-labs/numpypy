@@ -702,7 +702,7 @@ def configuration(parent_package='',top_path=None):
                        join('src', 'private', 'npy_binsearch.h.src'),
                        join('src', 'npysort', 'binsearch.c.src'),
                        ]
-    if '__pypy__' not in sys.builtin_module_names:
+    if not is_pypy():
         config.add_library('npysort',
                            sources=npysort_sources,
                            include_dirs=[])
@@ -872,7 +872,7 @@ def configuration(parent_package='',top_path=None):
         multiarray_src = [join('src', 'multiarray', 'multiarraymodule_onefile.c')]
         multiarray_src.append(generate_multiarray_templated_sources)
 
-    if '__pypy__' not in sys.builtin_module_names:
+    if not is_pypy():
         config.add_extension('multiarray',
                          sources=multiarray_src +
                                  [generate_config_h,
@@ -947,7 +947,7 @@ def configuration(parent_package='',top_path=None):
         umath_src.append(join('src', 'umath', 'funcs.inc.src'))
         umath_src.append(join('src', 'umath', 'simd.inc.src'))
 
-    if '__pypy__' not in sys.builtin_module_names:
+    if not is_pypy():
         config.add_extension('umath',
                          sources=umath_src +
                                  [generate_config_h,
@@ -962,7 +962,7 @@ def configuration(parent_package='',top_path=None):
     #                        umath_tests module                           #
     #######################################################################
 
-    if '__pypy__' not in sys.builtin_module_names:
+    if not is_pypy():
         config.add_extension('umath_tests',
                     sources=[join('src', 'umath', 'umath_tests.c.src')])
 
@@ -970,7 +970,7 @@ def configuration(parent_package='',top_path=None):
     #                   custom rational dtype module                      #
     #######################################################################
 
-    if '__pypy__' not in sys.builtin_module_names:
+    if not is_pypy():
         config.add_extension('test_rational',
                     sources=[join('src', 'umath', 'test_rational.c.src')])
 
@@ -978,7 +978,7 @@ def configuration(parent_package='',top_path=None):
     #                        struct_ufunc_test module                     #
     #######################################################################
 
-    if '__pypy__' not in sys.builtin_module_names:
+    if not is_pypy():
         config.add_extension('struct_ufunc_test',
                     sources=[join('src', 'umath', 'struct_ufunc_test.c.src')])
 
@@ -986,7 +986,7 @@ def configuration(parent_package='',top_path=None):
     #                     multiarray_tests module                         #
     #######################################################################
 
-    if '__pypy__' not in sys.builtin_module_names:
+    if not is_pypy():
         config.add_extension('multiarray_tests',
                     sources=[join('src', 'multiarray', 'multiarray_tests.c.src')])
 
@@ -994,7 +994,7 @@ def configuration(parent_package='',top_path=None):
     #                        operand_flag_tests module                    #
     #######################################################################
 
-    if '__pypy__' not in sys.builtin_module_names:
+    if not is_pypy():
         config.add_extension('operand_flag_tests',
                     sources=[join('src', 'umath', 'operand_flag_tests.c.src')])
 
