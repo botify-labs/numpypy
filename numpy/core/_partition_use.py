@@ -7,6 +7,8 @@ from numpy import partition as numpy_partition
 _type_to_suff = dict(zip(list_type, list_suff))
 _dtype_to_cffi_type = {dtype('int32'): 'npy_int',
                        dtype('int64'): 'npy_longlong',
+                       dtype('uint32'): 'npy_uint',
+                       dtype('uint64'): 'npy_ulonglong',
                        dtype('float64'): 'npy_double',
                        dtype('float32'): 'npy_float',
                        }
