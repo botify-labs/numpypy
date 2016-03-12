@@ -1,8 +1,10 @@
 from _partition import lib, ffi
+
 from _parition_build import list_suff, list_type
-from numpy.core.multiarray import dtype
 from numpy import apply_along_axis
 from numpy import partition as numpy_partition
+from numpy import sort
+from numpy.core.multiarray import dtype
 
 _type_to_suff = dict(zip(list_type, list_suff))
 _dtype_to_cffi_type = {dtype('int32'): 'npy_int',
@@ -35,9 +37,11 @@ def _partition_for_1d(a, kth, kind='introselect', order=None):
     -------
 
     """
-    assert kind == 'introselect'
-    assert order is None
     assert a.ndim == 1
+    if kind != 'introselect':
+        raise NotImplementedError("kind == '{}' is not implemented yet".format(kind))
+    if order is not None:
+        raise NotImplementedError("Only order == None is implemented")
 
     str_dst_type = _cffi_type(a.dtype)
     if str_dst_type is None:
@@ -82,15 +86,14 @@ def partition(a, kth, axis=-1, kind='introselect', order=None):
     -------
 
     """
-    if order is not None:
-        raise NotImplementedError("Only order == None is implemented")
-    if kind != 'introselect':
-        raise NotImplementedError("kind == '{}' is not implemented yet".format(kind))
 
     if a.size == 0:
         return None
 
-    if (axis == -1 or axis == a.ndim - 1) and a.ndim == 1:
-        return _partition_for_1d(a, kth, kind, order)
-    else:
-        return apply_along_axis(numpy_partition, axis=axis, arr=a, kth=kth)
+    try:
+        if (axis == -1 or axis == a.ndim - 1) and a.ndim == 1:
+            return _partition_for_1d(a, kth, kind, order)
+        else:
+            return apply_along_axis(numpy_partition, axis=axis, arr=a, kth=kth, order=order)
+    except NotImplementedError:
+        sort(a, axis=axis, order=order)
