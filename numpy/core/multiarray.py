@@ -1,5 +1,6 @@
 from _numpypy.multiarray import *
 from _numpypy.multiarray import _reconstruct
+from pypy_impl import bincount
 
 def _fastCopyAndTranspose(a):
     return a.T.copy()
@@ -38,14 +39,6 @@ def _copyto(dst, src, casting='same_kind', where=None):
 
 if 'copyto' not in globals():
     copyto = _copyto
-
-
-try:
-    import pypy_impl.bincount
-    if 'bincount' not in globals():
-        bincount = pypy_impl.bincount.bincount
-except ImportError:
-    pass
 
 
 def format_longfloat(x, precision):
