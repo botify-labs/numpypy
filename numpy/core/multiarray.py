@@ -1,6 +1,6 @@
 from _numpypy.multiarray import *
 from _numpypy.multiarray import _reconstruct
-from pypy_impl import bincount
+from pypy_impl import bincount, digitize
 
 def _fastCopyAndTranspose(a):
     return a.T.copy()
@@ -100,7 +100,7 @@ CLIP WRAP RAISE MAXDIMS ALLOW_THREADS BUFSIZE
 for name in '''
 nested_iters
 broadcast empty_like fromiter fromfile frombuffer newbuffer getbuffer
-int_asbuffer set_numeric_ops promote_types digitize
+int_asbuffer set_numeric_ops promote_types
 lexsort compare_chararrays putmask einsum inner interp
 _vec_string datetime_data correlate correlate2 vdot matmul _insert
 datetime_as_string busday_offset busday_count is_busday busdaycalendar
