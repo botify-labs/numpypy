@@ -39,6 +39,15 @@ def _copyto(dst, src, casting='same_kind', where=None):
 if 'copyto' not in globals():
     copyto = _copyto
 
+
+try:
+    import pypy_impl.bincount
+    if 'bincount' not in globals():
+        bincount = pypy_impl.bincount.bincount
+except ImportError:
+    pass
+
+
 def format_longfloat(x, precision):
     return "%%.%df" % precision % x
 
@@ -99,7 +108,7 @@ for name in '''
 nested_iters
 broadcast empty_like fromiter fromfile frombuffer newbuffer getbuffer
 int_asbuffer set_numeric_ops promote_types digitize
-lexsort compare_chararrays putmask einsum inner bincount interp
+lexsort compare_chararrays putmask einsum inner interp
 _vec_string datetime_data correlate correlate2 vdot matmul _insert
 datetime_as_string busday_offset busday_count is_busday busdaycalendar
 ravel_multi_index unravel_index packbits unpackbits
