@@ -1,6 +1,6 @@
 from _numpypy.multiarray import *
 from _numpypy.multiarray import _reconstruct
-from pypy_impl import bincount
+from pypy_impl import bincount, digitize
 
 def _fastCopyAndTranspose(a):
     return a.T.copy()
