@@ -469,6 +469,10 @@ def configuration(parent_package='',top_path=None):
 
             # Generate the config.h file from moredefs
             target_f = open(target, 'w')
+            if is_pypy():
+                from distutils.sysconfig import get_python_inc
+                if os.path.exists(os.path.join(get_python_inc(), 'pypy_numpy.h')):
+                    target_f.write('#include "pypy_numpy.h"\n')
             for d in moredefs:
                 if isinstance(d, str):
                     target_f.write('#define %s\n' % (d))
