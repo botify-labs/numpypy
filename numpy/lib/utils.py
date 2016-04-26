@@ -39,7 +39,7 @@ def get_include():
     """
     if '__pypy__' in sys.builtin_module_names and not (
             sys.pypy_version_info.major >= 5 and
-            sys.pypy_version_info.minor >= 1):
+            sys.pypy_version_info.minor >= 2):
         import distutils.sysconfig
         # numpy/*.h is already shipped with PyPy includes, no need for
         # numpy/core/include/*. Moreover, those files are specific for the
