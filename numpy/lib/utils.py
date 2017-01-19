@@ -41,7 +41,7 @@ def get_include():
         import distutils.sysconfig
         # pypy-specific numpy/*.h is shipped with PyPy, no need for
         # numpy/core/include/*.
-        d = os.path.join(distutils.sysconfig.get_python_inc(), '_numpy')
+        d = os.path.join(distutils.sysconfig.get_python_inc(), '_numpypy')
         if os.path.exists(d):
             return d
         return distutils.sysconfig.get_python_inc()
